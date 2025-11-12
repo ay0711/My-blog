@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* Tailwind v4: enable class-based dark mode (.dark on <html>) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Optional theme tokens */
+@theme {
+  --color-dark-bg: #0b1020;
+}
+
+/* Inform the browser when dark is active for form controls, scrollbars, etc. */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+  }
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
+/* Global styles */
+html, body {
+  height: 100%;
+}
+
+/* Typography tweaks */
+.prose p {
+  margin-bottom: 1rem;
+}
+
+/* Ensure media scales nicely on small screens */
+img, video, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Smooth responsive typography (optional) */
+h1 { font-size: clamp(1.75rem, 2vw + 1rem, 2.25rem); }
+h2 { font-size: clamp(1.5rem, 1.6vw + 0.9rem, 1.875rem); }
+h3 { font-size: clamp(1.25rem, 1.2vw + 0.8rem, 1.5rem); }
+
+/* Improve focus visibility */
+:focus-visible {
+  outline: 2px solid rgb(99 102 241); /* indigo-500 */
+  outline-offset: 2px;
+}
