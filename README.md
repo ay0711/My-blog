@@ -5,7 +5,7 @@ A full‑stack blog platform with:
 - Express/MongoDB backend (News import, AI helpers, Auth, Email)
 - News integration via NewsAPI with one‑click import and batch cron
 - AI endpoints (Gemini) for generating content, tags, and summaries
-- Firebase authentication (Google + email/password) with secure sessions
+- Email/password authentication with secure JWT sessions
 
 This repository contains two apps:
 
@@ -22,7 +22,7 @@ blog-site/      # Next.js app (port 3000)
 - Trending tags, series support, and pagination
 - News search/top headlines + import (single or bulk)
 - AI content tools (generate, summarize, tag)
-- Firebase‑backed auth with secure httpOnly session cookies
+- Email/password authentication with secure httpOnly JWT cookies
 - Beautiful light/dark theme with gradient UI
 
 ---
@@ -84,12 +84,6 @@ EMAIL_FROM="ModernBlog <noreply@modernblog.com>"
 NEWSAPI_KEY=your_newsapi_key
 GEMINI_API_KEY=your_google_gemini_api_key
 
-# Firebase Admin (JSON or base64 of JSON)
-# Paste raw JSON or base64-encoded content of your service account
-FIREBASE_SERVICE_ACCOUNT={ "type": "service_account", ... }
-# or
-# FIREBASE_SERVICE_ACCOUNT=eyJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsIC4uLn0=
-
 # Auto-import controls (optional)
 AUTO_IMPORT_ENABLED=true
 AUTO_IMPORT_INTERVAL=3600000 # 1 hour in ms
@@ -148,8 +142,7 @@ AI (Gemini)
 - POST `/api/ai/summarize` – `{ content, length? }`
 - POST `/api/ai/tags` – `{ title?, content? }`
 
-Auth (Firebase + Email/Password)
-- POST `/api/auth/firebase` – `{ idToken }` (verifies Firebase ID token and sets httpOnly session)
+Auth (Email/Password)
 - POST `/api/auth/signup` – `{ email, password, name? }`
 - POST `/api/auth/signin` – `{ email, password }`
 - POST `/api/auth/logout`
@@ -233,8 +226,8 @@ curl -X POST http://localhost:5555/api/ai/generate -H "Content-Type: application
 ---
 
 ## Tech Stack
-- Frontend: Next.js 15, React 19, Tailwind CSS v4, Framer Motion, Firebase Web SDK
-- Backend: Node.js + Express, MongoDB + Mongoose, Firebase Admin, Nodemailer, Google Gemini
+- Frontend: Next.js 15, React 19, Tailwind CSS v4, Framer Motion
+- Backend: Node.js + Express, MongoDB + Mongoose, Nodemailer, Google Gemini, bcrypt
 
 ---
 

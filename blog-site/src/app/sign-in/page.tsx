@@ -4,9 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
-import GoogleIcon from '@/components/icons/GoogleIcon';
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '@/lib/firebase';
 import { fetchWithFallback } from '@/lib/api';
 
 export default function SignInPage() {
@@ -37,38 +34,13 @@ export default function SignInPage() {
         return;
       }
 
-      // Redirect to homepage on success
-      router.push('/');
+      // Force a small delay to ensure cookie is set, then redirect
+      setTimeout(() => {
+        router.push('/');
+        router.refresh(); // Force refresh to update auth state
+      }, 100);
     } catch (err: unknown) {
       setError('Network error. Please try again.');
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setLoading(true);
-
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
-
-      const res = await fetchWithFallback('/api/auth/firebase', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken })
-      });
-
-      if (!res.ok) {
-        setError('Google sign-in failed');
-        setLoading(false);
-        return;
-      }
-
-      router.push('/');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Google sign-in failed';
-      setError(msg);
       setLoading(false);
     }
   };
@@ -96,25 +68,6 @@ export default function SignInPage() {
               {error}
             </div>
           )}
-
-          {/* Google Sign-In */}
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 transition-all duration-200 mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <GoogleIcon className="w-5 h-5" />
-            <span className="font-medium text-gray-700 dark:text-gray-200">Continue with Google</span>
-          </button>
-
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or continue with email</span>
-            </div>
-          </div>
 
           {/* Email Sign-In Form */}
           <form onSubmit={handleEmailSignIn} className="space-y-4">

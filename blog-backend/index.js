@@ -16,7 +16,6 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
-const admin = require('firebase-admin');
 
 // CORS: allow local dev and optional production origins via env FRONTEND_ORIGIN(S)
 const ALLOWED_ORIGINS = (process.env.FRONTEND_ORIGINS
@@ -60,26 +59,6 @@ try {
   }
 } catch (e) {
   console.warn('Gemini client not initialized:', e.message);
-}
-
-// Initialize Firebase Admin SDK if service account provided (supports raw JSON or base64-encoded)
-const FIREBASE_SA = process.env.FIREBASE_SERVICE_ACCOUNT;
-if (FIREBASE_SA) {
-  try {
-    let sa = FIREBASE_SA;
-    if (!sa.trim().startsWith('{')) {
-      // assume base64
-      sa = Buffer.from(sa, 'base64').toString('utf8');
-    }
-    const serviceAccount = JSON.parse(sa);
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-  /* log removed */
-  } catch (err) {
-    console.warn('⚠ Could not parse FIREBASE_SERVICE_ACCOUNT, falling back to default init:', err.message);
-    try { admin.initializeApp(); } catch (e) { console.warn('⚠ Firebase Admin default init failed:', e.message); }
-  }
-} else {
-  try { admin.initializeApp(); /* log removed */ } catch (e) { console.warn('⚠ Firebase Admin init skipped or failed:', e.message); }
 }
 
 // Auto-import configuration
@@ -910,7 +889,7 @@ app.post('/api/ai/tags', async (req, res) => {
   }
 });
 
-// ========== AUTH & USERS (Firebase) ==========
+// ========== AUTH & USERS ==========
 
 const setSession = (res, user) => {
   const token = jwt.sign({ uid: user.uid, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
@@ -990,68 +969,6 @@ const getUserFromReq = async (req) => {
     return null;
   }
 };
-
-// POST /api/auth/firebase - verify Firebase ID token and create/update user
-app.post('/api/auth/firebase', async (req, res) => {
-  try {
-    const { idToken } = req.body || {};
-    if (!idToken) return res.status(400).json({ message: 'idToken required' });
-    
-    // Verify Firebase token using Admin SDK (initialized at app startup)
-    if (!admin || !admin.auth) {
-      console.error('Firebase Admin SDK is not initialized');
-      return res.status(500).json({ message: 'Server misconfiguration' });
-    }
-    
-    let decodedToken;
-    try {
-      decodedToken = await admin.auth().verifyIdToken(idToken);
-    } catch (err) {
-      console.error('Firebase token verification failed:', err.message);
-      return res.status(401).json({ message: 'Invalid Firebase token' });
-    }
-    
-    const uid = decodedToken.uid;
-    const email = (decodedToken.email || '').toLowerCase();
-    const name = decodedToken.name || email.split('@')[0];
-    const avatar = decodedToken.picture || '';
-    
-    let user;
-    if (mongoConnected) {
-      user = await User.findOne({ uid });
-      const isNewUser = !user;
-      if (!user) {
-        user = await User.create({ uid, email, name, avatar, provider: 'google', emailVerified: true, followingAuthors: [] });
-        sendWelcomeEmail(email, name); // Send welcome email for new users
-      } else if (avatar && user.avatar !== avatar) {
-        user.avatar = avatar;
-        await user.save();
-      }
-      user = user.toObject();
-    } else {
-      const usersFile = path.join(__dirname, 'users.json');
-      const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
-      user = arr.find(x => x.uid === uid);
-      const isNewUser = !user;
-      if (!user) {
-        user = { uid, email, name, avatar, provider: 'google', emailVerified: true, followingAuthors: [], createdAt: new Date() };
-        arr.push(user);
-        if (IS_SERVERLESS) {
-          console.warn('⚠️  Skipping users.json write in serverless/production environment');
-        } else {
-          fs.writeFileSync(usersFile, JSON.stringify(arr, null, 2));
-        }
-        sendWelcomeEmail(email, name); // Send welcome email for new users
-      }
-    }
-    
-    setSession(res, user);
-    return res.json({ user });
-  } catch (err) {
-    console.error('Auth error:', err.message);
-    res.status(500).json({ message: 'Auth failed' });
-  }
-});
 
 // POST /api/auth/signup - email/password sign-up
 app.post('/api/auth/signup', async (req, res) => {

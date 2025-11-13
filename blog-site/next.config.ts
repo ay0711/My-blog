@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   // workspace layout differs.
   outputFileTracingRoot: path.resolve(__dirname, '..'),
   
-  // Fix Cross-Origin-Opener-Policy for Firebase popup authentication
+  // Configure security headers
   async headers() {
     return [
       {

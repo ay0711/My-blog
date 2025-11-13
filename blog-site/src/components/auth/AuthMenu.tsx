@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { auth } from '@/lib/firebase';
-import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { fetchJSON } from '@/lib/api';
 
 type User = {
@@ -49,35 +47,28 @@ const getAvatarColor = (uid: string): string => {
 
 export default function AuthMenu({ mobile }: { mobile?: boolean }) {
   const [user, setUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
-    // Listen to Firebase auth state
-    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      setFirebaseUser(fbUser);
-      if (fbUser) {
-        // Check if user is in backend
-        try {
-          const data = await fetchJSON<{ user: User | null }>('/api/auth/me');
-          setUser(data.user);
-        } catch {
-          // Silently handle - user not authenticated
-          setUser(null);
-        }
-      } else {
+    // Check backend auth
+    const checkBackendAuth = async () => {
+      try {
+        const data = await fetchJSON<{ user: User | null }>('/api/auth/me');
+        setUser(data.user);
+      } catch {
         setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    checkBackendAuth();
   }, []);
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      // Sign out from backend
       await fetchJSON('/api/auth/logout', { method: 'POST' });
       setUser(null);
     } catch (err) {
@@ -87,7 +78,7 @@ export default function AuthMenu({ mobile }: { mobile?: boolean }) {
 
   if (loading) return <div className="text-sm text-gray-500">Loading...</div>;
 
-  if (!user || !firebaseUser) {
+  if (!user) {
     return (
       <Link
         href="/sign-in"
@@ -98,8 +89,8 @@ export default function AuthMenu({ mobile }: { mobile?: boolean }) {
     );
   }
 
-  // Determine avatar source: Firebase photoURL (Google), user avatar (backend), or initials
-  const avatarUrl = firebaseUser.photoURL || user.avatar;
+  // Use backend avatar or initials
+  const avatarUrl = user.avatar;
   const initials = getInitials(user.name || '', user.email || '');
   const avatarColor = getAvatarColor(user.uid);
 
