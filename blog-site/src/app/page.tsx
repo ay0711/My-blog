@@ -6,6 +6,8 @@ import { motion } from 'framer-motion';
 import PostCard from '@/components/PostCard';
 import FeaturedCarousel from '@/components/FeaturedCarousel';
 import Sidebar from '@/components/Sidebar';
+import LoadingState from '@/components/LoadingState';
+import ErrorState from '@/components/ErrorState';
 import { FiSearch } from 'react-icons/fi';
 import { fetchJSON, fetchWithFallback } from '@/lib/api';
 
@@ -33,6 +35,8 @@ export default function HomePage() {
   const [trending, setTrending] = useState<Post[]>([]);
   const [featured, setFeatured] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<'error' | 'timeout' | 'network'>('error');
   const [search, setSearch] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -109,6 +113,7 @@ export default function HomePage() {
   const fetchPosts = async () => {
     try {
       setLoading(true);
+      setError(null);
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '9',
@@ -126,8 +131,20 @@ export default function HomePage() {
       setTotalPages(Math.ceil((data.total || 0) / 9));
       
       console.log(`📚 Loaded ${data.posts?.length || 0} posts (Page ${page} of ${Math.ceil((data.total || 0) / 9)})`);
-    } catch (error) {
-      console.error('❌ Failed to fetch posts:', error);
+    } catch (err) {
+      console.error('❌ Failed to fetch posts:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load posts';
+      setError(errorMessage);
+      
+      // Determine error type for better UX
+      if (errorMessage.includes('waking up') || errorMessage.includes('taking too long')) {
+        setErrorType('timeout');
+      } else if (errorMessage.includes('connect') || errorMessage.includes('network')) {
+        setErrorType('network');
+      } else {
+        setErrorType('error');
+      }
+      
       setPosts([]);
       setTotal(0);
       setTotalPages(1);
@@ -138,19 +155,21 @@ export default function HomePage() {
 
   const fetchTrendingTags = async () => {
     try {
-      const data = await fetchJSON<{ tags: TrendingTag[] }>(`/api/tags/trending?limit=20`);
+      const data = await fetchJSON<{ tags: TrendingTag[] }>('/api/posts/tags/trending');
       setTrendingTags(data.tags || []);
     } catch (error) {
       console.error('Failed to fetch trending tags:', error);
+      // Don't show error for sidebar data, just log it
     }
   };
 
   const fetchTrending = async () => {
     try {
-      const data = await fetchJSON<{ posts: Post[] }>(`/api/posts?sort=popular&limit=5`);
+      const data = await fetchJSON<{ posts: Post[] }>('/api/posts/trending');
       setTrending(data.posts || []);
     } catch (error) {
-      console.error('Failed to fetch trending:', error);
+      console.error('Failed to fetch trending posts:', error);
+      // Don't show error for sidebar data, just log it
     }
   };
 
@@ -170,6 +189,7 @@ export default function HomePage() {
       setFeatured(featuredPosts);
     } catch (error) {
       console.error('Failed to fetch featured:', error);
+      // Don't show error for carousel, just log it
     }
   };
 
@@ -320,11 +340,17 @@ export default function HomePage() {
                   This will only take a moment
                 </p>
               </div>
+            ) : error ? (
+              <ErrorState 
+                message={error} 
+                type={errorType}
+                onRetry={() => {
+                  setError(null);
+                  fetchPosts();
+                }}
+              />
             ) : loading ? (
-              <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-                <p className="mt-4 text-gray-600 dark:text-gray-400">Loading posts...</p>
-              </div>
+              <LoadingState message="Loading posts..." fullPage={false} />
             ) : gridPosts.length > 0 ? (
               <>
                 <motion.div 

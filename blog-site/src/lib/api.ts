@@ -19,15 +19,32 @@ export async function fetchWithFallback(path: string, init?: RequestInit): Promi
     }
     const bases = getApiBases();
     let lastErr: unknown = null;
+    
     for (const base of bases) {
         try {
             // Ensure cookies are sent/received for cross-origin auth (session cookie)
-            const mergedInit: RequestInit = { credentials: 'include', ...init };
+            const mergedInit: RequestInit = { 
+                credentials: 'include', 
+                ...init,
+                // Add timeout to detect slow/inactive backend
+                signal: init?.signal || AbortSignal.timeout(15000) // 15 second timeout
+            };
             const res = await fetch(`${base}${path}`, mergedInit);
             if (res.ok) return res;
             lastErr = new Error(`HTTP ${res.status} from ${base}${path}`);
         } catch (e: unknown) {
-            lastErr = e;
+            // Check if it's a timeout or network error
+            if (e instanceof Error) {
+                if (e.name === 'TimeoutError' || e.name === 'AbortError') {
+                    lastErr = new Error('Backend server is taking too long to respond. It might be waking up from sleep mode. Please try again in a moment.');
+                } else if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+                    lastErr = new Error('Unable to connect to the server. Please check your internet connection or try again later.');
+                } else {
+                    lastErr = e;
+                }
+            } else {
+                lastErr = e;
+            }
         }
     }
     if (lastErr instanceof Error) throw lastErr;
