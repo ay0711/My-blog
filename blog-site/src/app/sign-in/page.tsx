@@ -39,7 +39,7 @@ export default function SignInPage() {
 
       // Redirect to homepage on success
       router.push('/');
-    } catch (err) {
+    } catch (err: unknown) {
       setError('Network error. Please try again.');
       setLoading(false);
     }
@@ -66,8 +66,9 @@ export default function SignInPage() {
       }
 
       router.push('/');
-    } catch (err: any) {
-      setError(err.message || 'Google sign-in failed');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Google sign-in failed';
+      setError(msg);
       setLoading(false);
     }
   };

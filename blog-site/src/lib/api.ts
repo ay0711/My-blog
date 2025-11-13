@@ -18,7 +18,7 @@ export async function fetchWithFallback(path: string, init?: RequestInit): Promi
         throw new Error(`fetchWithFallback expects a path starting with '/': received ${path}`);
     }
     const bases = getApiBases();
-    let lastErr: any = null;
+    let lastErr: unknown = null;
     for (const base of bases) {
         try {
             // Ensure cookies are sent/received for cross-origin auth (session cookie)
@@ -26,14 +26,15 @@ export async function fetchWithFallback(path: string, init?: RequestInit): Promi
             const res = await fetch(`${base}${path}`, mergedInit);
             if (res.ok) return res;
             lastErr = new Error(`HTTP ${res.status} from ${base}${path}`);
-        } catch (e: any) {
+        } catch (e: unknown) {
             lastErr = e;
         }
     }
-    throw lastErr || new Error('All API bases failed');
+    if (lastErr instanceof Error) throw lastErr;
+    throw new Error(String(lastErr ?? 'All API bases failed'));
 }
 
-export async function fetchJSON<T = any>(path: string, init?: RequestInit): Promise<T> {
+export async function fetchJSON<T = unknown>(path: string, init?: RequestInit): Promise<T> {
     const res = await fetchWithFallback(path, init);
     return res.json();
 }

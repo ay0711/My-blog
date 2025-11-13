@@ -7,6 +7,25 @@ const nextConfig: NextConfig = {
   // tells Next the root used for server output tracing. Adjust this path if your
   // workspace layout differs.
   outputFileTracingRoot: path.resolve(__dirname, '..'),
+  
+  // Fix Cross-Origin-Opener-Policy for Firebase popup authentication
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'unsafe-none',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

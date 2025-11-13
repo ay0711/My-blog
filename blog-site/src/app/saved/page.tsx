@@ -35,7 +35,7 @@ export default function SavedPage() {
         const results: Post[] = [];
         for (const id of ids) {
           try {
-            const data = await fetchJSON(`/api/posts/${id}`);
+            const data = await fetchJSON(`/api/posts/${id}`) as Post;
             results.push({ id: data.id, title: data.title, featuredImage: data.featuredImage, createdAt: data.createdAt });
           } catch {}
         }

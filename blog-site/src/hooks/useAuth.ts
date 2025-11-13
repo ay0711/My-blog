@@ -19,7 +19,7 @@ export function useAuth() {
 
   const checkAuth = async () => {
     try {
-      const data = await fetchJSON('/api/auth/me');
+      const data = await fetchJSON<{ user: User | null }>('/api/auth/me');
       setUser(data.user);
     } catch {
       setUser(null);

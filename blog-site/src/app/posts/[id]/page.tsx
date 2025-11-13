@@ -109,7 +109,7 @@ export default function PostPage() {
     const loadSeries = async () => {
       if (!post?.seriesId) { setSeriesPosts([]); return; }
       try {
-        const data = await fetchJSON(`/api/series/${post.seriesId}`);
+        const data = await fetchJSON<{ posts: Post[] }>(`/api/series/${post.seriesId}`);
         setSeriesPosts(Array.isArray(data.posts) ? data.posts : []);
       } catch {}
     };
@@ -125,7 +125,7 @@ export default function PostPage() {
     const check = async () => {
       if (!post?.author) return;
       try {
-        const data = await fetchJSON('/api/auth/me');
+        const data = await fetchJSON<{ user: { followingAuthors?: string[] } | null }>('/api/auth/me');
         const list: string[] = data.user?.followingAuthors || [];
         setFollowing(list.includes(post.author));
       } catch { setFollowing(false); }
@@ -393,7 +393,7 @@ export default function PostPage() {
                 <button
                   onClick={async () => {
                     try {
-                      const j = await fetchJSON('/api/users/follow', {
+                      const j = await fetchJSON<{ followingAuthors?: string[] }>('/api/users/follow', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ author: post.author })

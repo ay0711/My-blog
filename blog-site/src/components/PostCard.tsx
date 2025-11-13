@@ -1,6 +1,6 @@
 'use client';
 import { motion } from 'framer-motion';
-import { FiHeart, FiMessageCircle, FiCalendar, FiClock, FiBookmark, FiBookmark as FiBookmarkFilled } from 'react-icons/fi';
+import { FiHeart, FiMessageCircle, FiCalendar, FiClock, FiBookmark } from 'react-icons/fi';
 
 type Post = {
   id: string;
@@ -9,7 +9,7 @@ type Post = {
   author: string;
   createdAt: string;
   likes: number;
-  comments: any[];
+  comments: unknown[];
   tags?: string[];
   featuredImage?: string;
   isPinned?: boolean;

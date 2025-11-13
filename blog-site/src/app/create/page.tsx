@@ -35,7 +35,18 @@ export default function CreatePage() {
 
   const fetchPost = async () => {
     try {
-      const data = await fetchJSON(`/api/posts/${editId}`);
+      interface PostResponse {
+        title: string;
+        content: string;
+        author: string;
+        tags?: string[];
+        featuredImage?: string;
+        isPinned?: boolean;
+        pinnedUntil?: string | null;
+        seriesId?: string;
+        partNumber?: number | null;
+      }
+      const data = await fetchJSON<PostResponse>(`/api/posts/${editId}`);
       setForm({
         title: data.title,
         content: data.content,
@@ -142,7 +153,7 @@ export default function CreatePage() {
         
         // Try to auto-suggest tags
         try {
-          const tJson = await fetchJSON('/api/ai/tags', {
+          const tJson = await fetchJSON<{ tags?: string[] }>('/api/ai/tags', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: data.text }),

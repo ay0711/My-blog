@@ -60,9 +60,9 @@ export default function AuthMenu({ mobile }: { mobile?: boolean }) {
       if (fbUser) {
         // Check if user is in backend
         try {
-          const data = await fetchJSON('/api/auth/me');
+          const data = await fetchJSON<{ user: User | null }>('/api/auth/me');
           setUser(data.user);
-        } catch (err) {
+        } catch {
           // Silently handle - user not authenticated
           setUser(null);
         }

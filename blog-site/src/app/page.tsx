@@ -18,7 +18,7 @@ type Post = {
   author: string;
   createdAt: string;
   likes: number;
-  comments: any[];
+  comments: unknown[];
   tags?: string[];
   featuredImage?: string;
 };

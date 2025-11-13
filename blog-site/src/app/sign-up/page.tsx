@@ -46,7 +46,7 @@ export default function SignUpPage() {
 
       // Redirect to homepage on success
       router.push('/');
-    } catch (err) {
+    } catch (err: unknown) {
       setError('Network error. Please try again.');
       setLoading(false);
     }
@@ -73,8 +73,9 @@ export default function SignUpPage() {
       }
 
       router.push('/');
-    } catch (err: any) {
-      setError(err.message || 'Google sign-up failed');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Google sign-up failed';
+      setError(msg);
       setLoading(false);
     }
   };
