@@ -59,16 +59,20 @@ export default function UserProfilePage() {
         setUser(userData.user);
 
         // Check if current user is following this user
-        if (currentUser && 'following' in currentUser && Array.isArray((currentUser as any).following)) {
-          setIsFollowing((currentUser as any).following.includes(userData.user.uid));
+        if (currentUser && 'following' in currentUser && Array.isArray((currentUser as { following?: string[] }).following)) {
+          setIsFollowing((currentUser as { following?: string[] }).following?.includes(userData.user.uid) || false);
         }
 
         // Fetch user's posts
         const postsData = await fetchJSON<{ posts: Post[] }>(`/api/posts?author=${userData.user.name}`);
         setPosts(postsData.posts || []);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error loading user profile:', err);
-        setError(err.message || 'Failed to load user profile');
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError(String(err) || 'Failed to load user profile');
+        }
       } finally {
         setLoading(false);
       }
@@ -91,7 +95,7 @@ export default function UserProfilePage() {
         method: 'POST',
       });
       setIsFollowing(data.following);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error following user:', err);
     } finally {
       setFollowLoading(false);
@@ -111,7 +115,7 @@ export default function UserProfilePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">User Not Found</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">The user @{username} doesn't exist.</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">The user @{username} doesn&apos;t exist.</p>
           <Link href="/" className="text-indigo-600 dark:text-indigo-400 hover:underline">
             Go Home
           </Link>
@@ -120,7 +124,8 @@ export default function UserProfilePage() {
     );
   }
 
-  const isOwnProfile = (currentUser as any)?.uid === user?.uid || (currentUser as any)?.username === username;
+  const isOwnProfile = (currentUser as { uid?: string; username?: string })?.uid === user?.uid || 
+                       (currentUser as { uid?: string; username?: string })?.username === username;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

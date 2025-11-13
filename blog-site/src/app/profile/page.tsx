@@ -14,7 +14,7 @@ type Post = {
     author: string;
     createdAt: string;
     likes: number;
-    comments?: any[];
+    comments?: unknown[];
     tags?: string[];
     featuredImage?: string;
 };
@@ -114,7 +114,7 @@ export default function ProfilePage() {
                         )}
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{user.name}</h1>
-                            <p className="text-gray-600 dark:text-gray-400">@{(user as any).username || user.email.split('@')[0]}</p>
+                            <p className="text-gray-600 dark:text-gray-400">@{(user as { username?: string }).username || user.email.split('@')[0]}</p>
                             <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">{user.email}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
                                 {posts.length} {posts.length === 1 ? 'post' : 'posts'} published
@@ -144,7 +144,7 @@ export default function ProfilePage() {
                         animate={{ opacity: 1 }}
                         className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12 text-center"
                     >
-                        <div className="text-gray-400 text-lg mb-4">You haven't created any posts yet</div>
+                        <div className="text-gray-400 text-lg mb-4">You haven&apos;t created any posts yet</div>
                         <Link
                             href="/create"
                             className="inline-block px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition font-medium"
