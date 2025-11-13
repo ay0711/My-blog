@@ -13,6 +13,7 @@ const PostSchema = new mongoose.Schema({
   title: { type: String, required: true },
   content: { type: String, required: true },
   author: { type: String, required: true },
+  authorUsername: { type: String, default: null }, // @username of author
   // tags allow simple categorization and filtering on the frontend
   tags: { type: [String], default: [] },
   // optional featured image URL for richer UI
@@ -34,6 +35,14 @@ const PostSchema = new mongoose.Schema({
   },
   comments: { type: [CommentSchema], default: [] },
   sourceUrl: { type: String, default: null },
+  // Repost/Retweet fields
+  isRepost: { type: Boolean, default: false },
+  originalPostId: { type: String, default: null }, // ID of original post if this is a repost
+  repostCount: { type: Number, default: 0 }, // How many times this post has been reposted
+  repostedBy: { type: [String], default: [] }, // Array of user IDs who reposted
+  // Bookmarks
+  bookmarkedBy: { type: [String], default: [] }, // Array of user IDs who bookmarked
+  bookmarkCount: { type: Number, default: 0 },
 });
 
 // Indexes for faster lookup

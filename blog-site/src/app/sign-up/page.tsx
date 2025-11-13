@@ -1,23 +1,60 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { FiMail, FiLock, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiMail, FiLock, FiUser, FiEye, FiEyeOff, FiAtSign, FiCheck, FiX } from 'react-icons/fi';
 import { fetchWithFallback } from '@/lib/api';
 
 export default function SignUpPage() {
   const router = useRouter();
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+
+  // Check username availability with debounce
+  useEffect(() => {
+    const checkUsername = async () => {
+      if (!username || username.length < 3) {
+        setUsernameAvailable(null);
+        return;
+      }
+
+      setCheckingUsername(true);
+      try {
+        const res = await fetchWithFallback(`/api/users/check-username/${username}`);
+        const data = await res.json();
+        setUsernameAvailable(data.available);
+      } catch (err) {
+        console.error('Error checking username:', err);
+      } finally {
+        setCheckingUsername(false);
+      }
+    };
+
+    const timer = setTimeout(checkUsername, 500);
+    return () => clearTimeout(timer);
+  }, [username]);
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!username) {
+      setError('Username is required');
+      return;
+    }
+
+    if (!usernameAvailable) {
+      setError('Please choose an available username');
+      return;
+    }
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
@@ -30,7 +67,7 @@ export default function SignUpPage() {
       const res = await fetchWithFallback('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name })
+        body: JSON.stringify({ email, password, name, username })
       });
 
       const data = await res.json();
@@ -92,6 +129,42 @@ export default function SignUpPage() {
                   placeholder="Your name"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Username
+              </label>
+              <div className="relative">
+                <FiAtSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                  required
+                  className="w-full pl-10 pr-12 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="yourhandle"
+                  pattern="[a-z0-9_]{3,20}"
+                  title="3-20 characters: lowercase letters, numbers, and underscores only"
+                />
+                {username.length >= 3 && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {checkingUsername ? (
+                      <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                    ) : usernameAvailable === true ? (
+                      <FiCheck className="text-green-500 w-5 h-5" />
+                    ) : usernameAvailable === false ? (
+                      <FiX className="text-red-500 w-5 h-5" />
+                    ) : null}
+                  </div>
+                )}
+              </div>
+              {username.length >= 3 && usernameAvailable === false && (
+                <p className="text-red-500 text-xs mt-1">Username is already taken</p>
+              )}
+              {username.length >= 3 && usernameAvailable === true && (
+                <p className="text-green-500 text-xs mt-1">Username is available!</p>
+              )}
             </div>
 
             <div>

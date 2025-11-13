@@ -8,6 +8,7 @@ require('dotenv').config();
 
 const Post = require('./models/Post');
 const User = require('./models/User');
+const Notification = require('./models/Notification');
 const app = express();
 const PORT = process.env.PORT || 5555;
 const postsFilePath = path.join(__dirname, 'posts.json');
@@ -512,6 +513,301 @@ app.post('/api/posts/:id/unlike', async (req, res) => {
   }
 });
 
+// POST /api/posts/:id/repost - Repost/retweet a post
+app.post('/api/posts/:id/repost', async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: 'Not authenticated' });
+    
+    const postId = req.params.id;
+    
+    if (mongoConnected) {
+      const originalPost = await Post.findOne({ id: postId });
+      if (!originalPost) return res.status(404).json({ message: 'Post not found' });
+      
+      // Check if user already reposted
+      const alreadyReposted = originalPost.repostedBy && originalPost.repostedBy.includes(user.uid);
+      
+      if (alreadyReposted) {
+        // Undo repost
+        await Post.updateOne(
+          { id: postId },
+          { 
+            $pull: { repostedBy: user.uid },
+            $inc: { repostCount: -1 }
+          }
+        );
+        
+        // Delete the repost from user's posts
+        await Post.deleteOne({ 
+          isRepost: true, 
+          originalPostId: postId,
+          author: user.name 
+        });
+        
+        return res.json({ reposted: false, message: 'Repost removed' });
+      } else {
+        // Add repost
+        await Post.updateOne(
+          { id: postId },
+          { 
+            $addToSet: { repostedBy: user.uid },
+            $inc: { repostCount: 1 }
+          }
+        );
+        
+        // Create a repost entry
+        const repost = await Post.create({
+          id: crypto.randomUUID(),
+          title: originalPost.title,
+          content: originalPost.content,
+          author: user.name,
+          authorUsername: user.username,
+          tags: originalPost.tags,
+          featuredImage: originalPost.featuredImage,
+          createdAt: new Date(),
+          isRepost: true,
+          originalPostId: postId,
+          likes: 0,
+          comments: [],
+          repostCount: 0
+        });
+        
+        return res.json({ reposted: true, repost: repost.toObject() });
+      }
+    } else {
+      const posts = readPosts();
+      const idx = posts.findIndex(p => p.id === postId);
+      if (idx === -1) return res.status(404).json({ message: 'Post not found' });
+      
+      const originalPost = posts[idx];
+      if (!originalPost.repostedBy) originalPost.repostedBy = [];
+      
+      const alreadyReposted = originalPost.repostedBy.includes(user.uid);
+      
+      if (alreadyReposted) {
+        // Undo repost
+        originalPost.repostedBy = originalPost.repostedBy.filter(id => id !== user.uid);
+        originalPost.repostCount = Math.max(0, (originalPost.repostCount || 0) - 1);
+        
+        // Remove repost from posts array
+        const repostIdx = posts.findIndex(p => 
+          p.isRepost && p.originalPostId === postId && p.author === user.name
+        );
+        if (repostIdx !== -1) {
+          posts.splice(repostIdx, 1);
+        }
+        
+        writePosts(posts);
+        return res.json({ reposted: false, message: 'Repost removed' });
+      } else {
+        // Add repost
+        originalPost.repostedBy.push(user.uid);
+        originalPost.repostCount = (originalPost.repostCount || 0) + 1;
+        
+        // Create repost
+        const repost = {
+          id: crypto.randomUUID(),
+          title: originalPost.title,
+          content: originalPost.content,
+          author: user.name,
+          authorUsername: user.username,
+          tags: originalPost.tags,
+          featuredImage: originalPost.featuredImage,
+          createdAt: new Date().toISOString(),
+          isRepost: true,
+          originalPostId: postId,
+          likes: 0,
+          comments: [],
+          repostCount: 0
+        };
+        
+        posts.unshift(repost);
+        writePosts(posts);
+        return res.json({ reposted: true, repost });
+      }
+    }
+  } catch (err) {
+    console.error('Repost error:', err);
+    res.status(500).json({ message: 'Failed to repost' });
+  }
+});
+
+// POST /api/posts/:id/bookmark - Bookmark/unbookmark a post
+app.post('/api/posts/:id/bookmark', async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: 'Not authenticated' });
+    
+    const postId = req.params.id;
+    
+    if (mongoConnected) {
+      const post = await Post.findOne({ id: postId });
+      if (!post) return res.status(404).json({ message: 'Post not found' });
+      
+      const alreadyBookmarked = post.bookmarkedBy && post.bookmarkedBy.includes(user.uid);
+      
+      if (alreadyBookmarked) {
+        // Remove bookmark
+        await Post.updateOne(
+          { id: postId },
+          { 
+            $pull: { bookmarkedBy: user.uid },
+            $inc: { bookmarkCount: -1 }
+          }
+        );
+        return res.json({ bookmarked: false });
+      } else {
+        // Add bookmark
+        await Post.updateOne(
+          { id: postId },
+          { 
+            $addToSet: { bookmarkedBy: user.uid },
+            $inc: { bookmarkCount: 1 }
+          }
+        );
+        return res.json({ bookmarked: true });
+      }
+    } else {
+      const posts = readPosts();
+      const idx = posts.findIndex(p => p.id === postId);
+      if (idx === -1) return res.status(404).json({ message: 'Post not found' });
+      
+      const post = posts[idx];
+      if (!post.bookmarkedBy) post.bookmarkedBy = [];
+      
+      const alreadyBookmarked = post.bookmarkedBy.includes(user.uid);
+      
+      if (alreadyBookmarked) {
+        post.bookmarkedBy = post.bookmarkedBy.filter(id => id !== user.uid);
+        post.bookmarkCount = Math.max(0, (post.bookmarkCount || 0) - 1);
+        writePosts(posts);
+        return res.json({ bookmarked: false });
+      } else {
+        post.bookmarkedBy.push(user.uid);
+        post.bookmarkCount = (post.bookmarkCount || 0) + 1;
+        writePosts(posts);
+        return res.json({ bookmarked: true });
+      }
+    }
+  } catch (err) {
+    console.error('Bookmark error:', err);
+    res.status(500).json({ message: 'Failed to bookmark' });
+  }
+});
+
+// GET /api/bookmarks - Get user's bookmarked posts
+app.get('/api/bookmarks', async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: 'Not authenticated' });
+    
+    if (mongoConnected) {
+      const posts = await Post.find({ bookmarkedBy: user.uid }).sort({ createdAt: -1 }).lean();
+      return res.json({ posts });
+    } else {
+      const posts = readPosts();
+      const bookmarked = posts.filter(p => p.bookmarkedBy && p.bookmarkedBy.includes(user.uid));
+      return res.json({ posts: bookmarked });
+    }
+  } catch (err) {
+    console.error('Get bookmarks error:', err);
+    res.status(500).json({ message: 'Failed to get bookmarks' });
+  }
+});
+
+// Helper function to create notification
+async function createNotification(type, userId, fromUser, postId = null, postTitle = null, commentText = null) {
+  if (!mongoConnected) return; // Only support notifications with MongoDB
+  
+  try {
+    const notification = await Notification.create({
+      id: crypto.randomUUID(),
+      userId,
+      type,
+      fromUserId: fromUser.uid,
+      fromUsername: fromUser.username || fromUser.name,
+      fromUserAvatar: fromUser.avatar,
+      postId,
+      postTitle,
+      commentText,
+      read: false,
+      createdAt: new Date()
+    });
+    return notification;
+  } catch (err) {
+    console.error('Create notification error:', err);
+  }
+}
+
+// GET /api/notifications - Get user's notifications
+app.get('/api/notifications', async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: 'Not authenticated' });
+    
+    if (!mongoConnected) {
+      return res.json({ notifications: [] }); // Fallback for file-based storage
+    }
+    
+    const notifications = await Notification.find({ userId: user.uid })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+    
+    const unreadCount = await Notification.countDocuments({ userId: user.uid, read: false });
+    
+    return res.json({ notifications, unreadCount });
+  } catch (err) {
+    console.error('Get notifications error:', err);
+    res.status(500).json({ message: 'Failed to get notifications' });
+  }
+});
+
+// POST /api/notifications/:id/read - Mark notification as read
+app.post('/api/notifications/:id/read', async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: 'Not authenticated' });
+    
+    if (!mongoConnected) {
+      return res.json({ success: true });
+    }
+    
+    await Notification.updateOne(
+      { id: req.params.id, userId: user.uid },
+      { read: true }
+    );
+    
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Mark read error:', err);
+    res.status(500).json({ message: 'Failed to mark as read' });
+  }
+});
+
+// POST /api/notifications/read-all - Mark all notifications as read
+app.post('/api/notifications/read-all', async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: 'Not authenticated' });
+    
+    if (!mongoConnected) {
+      return res.json({ success: true });
+    }
+    
+    await Notification.updateMany(
+      { userId: user.uid, read: false },
+      { read: true }
+    );
+    
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Mark all read error:', err);
+    res.status(500).json({ message: 'Failed to mark all as read' });
+  }
+});
+
 // POST /api/posts/:id/comments
 app.post('/api/posts/:id/comments', async (req, res) => {
   const { author, content, parentId } = req.body;
@@ -975,23 +1271,48 @@ const getUserFromReq = async (req) => {
 // POST /api/auth/signup - email/password sign-up
 app.post('/api/auth/signup', async (req, res) => {
   try {
-    const { email, password, name } = req.body || {};
+    const { email, password, name, username } = req.body || {};
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+    if (!username) return res.status(400).json({ message: 'Username required' });
     
     const emailLower = email.toLowerCase().trim();
+    const usernameLower = username.toLowerCase().trim();
+    
+    // Validate username format (3-20 chars, alphanumeric + underscore only)
+    const usernameRegex = /^[a-z0-9_]{3,20}$/;
+    if (!usernameRegex.test(usernameLower)) {
+      return res.status(400).json({ 
+        message: 'Username must be 3-20 characters and contain only letters, numbers, and underscores' 
+      });
+    }
+    
+    // Reserved usernames
+    const reservedUsernames = ['admin', 'api', 'auth', 'help', 'support', 'settings', 'profile', 'posts', 'user', 'users'];
+    if (reservedUsernames.includes(usernameLower)) {
+      return res.status(400).json({ message: 'This username is reserved' });
+    }
+    
     if (password.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' });
     
-    // Check if user already exists
+    // Check if user already exists (email or username)
     let existingUser;
     if (mongoConnected) {
-      existingUser = await User.findOne({ email: emailLower });
+      existingUser = await User.findOne({ 
+        $or: [{ email: emailLower }, { username: usernameLower }] 
+      });
+      if (existingUser) {
+        const field = existingUser.email === emailLower ? 'Email' : 'Username';
+        return res.status(400).json({ message: `${field} already taken` });
+      }
     } else {
   const usersFile = path.join(__dirname, 'users.json');
   const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
-  existingUser = arr.find(x => x.email === emailLower);
+  existingUser = arr.find(x => x.email === emailLower || x.username === usernameLower);
+      if (existingUser) {
+        const field = existingUser.email === emailLower ? 'Email' : 'Username';
+        return res.status(400).json({ message: `${field} already taken` });
+      }
     }
-    
-    if (existingUser) return res.status(400).json({ message: 'Email already registered' });
     
     // Hash password
     const bcrypt = require('bcrypt');
@@ -1004,22 +1325,28 @@ app.post('/api/auth/signup', async (req, res) => {
       user = await User.create({
         uid,
         email: emailLower,
+        username: usernameLower,
         name: userName,
         password: hashedPassword,
         provider: 'email',
         emailVerified: false,
-        followingAuthors: []
+        followingAuthors: [],
+        followers: [],
+        following: []
       });
       user = user.toObject();
     } else {
       user = {
         uid,
         email: emailLower,
+        username: usernameLower,
         name: userName,
         password: hashedPassword,
         provider: 'email',
         emailVerified: false,
         followingAuthors: [],
+        followers: [],
+        following: [],
         createdAt: new Date()
       };
       const usersFile = path.join(__dirname, 'users.json');
@@ -1130,6 +1457,161 @@ app.post('/api/users/follow', async (req, res) => {
   } catch (e) {
     console.error('Follow error:', e.message);
     res.status(500).json({ message: 'Failed to follow' });
+  }
+});
+
+// GET /api/users/check-username/:username - Check if username is available
+app.get('/api/users/check-username/:username', async (req, res) => {
+  try {
+    const username = req.params.username.toLowerCase().trim();
+    
+    // Validate username format
+    const usernameRegex = /^[a-z0-9_]{3,20}$/;
+    if (!usernameRegex.test(username)) {
+      return res.json({ available: false, message: 'Invalid format' });
+    }
+    
+    // Check reserved usernames
+    const reservedUsernames = ['admin', 'api', 'auth', 'help', 'support', 'settings', 'profile', 'posts', 'user', 'users'];
+    if (reservedUsernames.includes(username)) {
+      return res.json({ available: false, message: 'Reserved username' });
+    }
+    
+    let existingUser;
+    if (mongoConnected) {
+      existingUser = await User.findOne({ username });
+    } else {
+      const usersFile = path.join(__dirname, 'users.json');
+      const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
+      existingUser = arr.find(x => x.username === username);
+    }
+    
+    return res.json({ available: !existingUser, message: existingUser ? 'Username taken' : 'Available' });
+  } catch (e) {
+    console.error('Check username error:', e.message);
+    res.status(500).json({ available: false, message: 'Error checking username' });
+  }
+});
+
+// GET /api/users/:username - Get user profile by username
+app.get('/api/users/:username', async (req, res) => {
+  try {
+    const username = req.params.username.toLowerCase().trim();
+    
+    let user;
+    if (mongoConnected) {
+      user = await User.findOne({ username }).select('-password').lean();
+    } else {
+      const usersFile = path.join(__dirname, 'users.json');
+      const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
+      user = arr.find(x => x.username === username);
+      if (user) {
+        const { password, ...userWithoutPassword } = user;
+        user = userWithoutPassword;
+      }
+    }
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    return res.json({ user });
+  } catch (e) {
+    console.error('Get user error:', e.message);
+    res.status(500).json({ message: 'Error fetching user' });
+  }
+});
+
+// POST /api/users/follow/:username - Follow/unfollow a user
+app.post('/api/users/follow/:username', async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) return res.status(401).json({ message: 'Not authenticated' });
+    
+    const targetUsername = req.params.username.toLowerCase().trim();
+    
+    // Can't follow yourself
+    if (user.username === targetUsername) {
+      return res.status(400).json({ message: "You can't follow yourself" });
+    }
+    
+    let targetUser;
+    if (mongoConnected) {
+      targetUser = await User.findOne({ username: targetUsername });
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      const currentUser = await User.findOne({ uid: user.uid });
+      const isFollowing = currentUser.following.includes(targetUser.uid);
+      
+      if (isFollowing) {
+        // Unfollow
+        await User.updateOne(
+          { uid: user.uid },
+          { $pull: { following: targetUser.uid } }
+        );
+        await User.updateOne(
+          { uid: targetUser.uid },
+          { $pull: { followers: user.uid } }
+        );
+      } else {
+        // Follow
+        await User.updateOne(
+          { uid: user.uid },
+          { $addToSet: { following: targetUser.uid } }
+        );
+        await User.updateOne(
+          { uid: targetUser.uid },
+          { $addToSet: { followers: user.uid } }
+        );
+      }
+      
+      const updatedUser = await User.findOne({ uid: user.uid }).select('-password').lean();
+      return res.json({ 
+        following: !isFollowing,
+        user: updatedUser
+      });
+    } else {
+      const usersFile = path.join(__dirname, 'users.json');
+      const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
+      
+      targetUser = arr.find(x => x.username === targetUsername);
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      const currentUserIdx = arr.findIndex(x => x.uid === user.uid);
+      const targetUserIdx = arr.findIndex(x => x.username === targetUsername);
+      
+      if (!arr[currentUserIdx].following) arr[currentUserIdx].following = [];
+      if (!arr[targetUserIdx].followers) arr[targetUserIdx].followers = [];
+      
+      const isFollowing = arr[currentUserIdx].following.includes(targetUser.uid);
+      
+      if (isFollowing) {
+        // Unfollow
+        arr[currentUserIdx].following = arr[currentUserIdx].following.filter(id => id !== targetUser.uid);
+        arr[targetUserIdx].followers = arr[targetUserIdx].followers.filter(id => id !== user.uid);
+      } else {
+        // Follow
+        arr[currentUserIdx].following.push(targetUser.uid);
+        arr[targetUserIdx].followers.push(user.uid);
+      }
+      
+      if (!IS_SERVERLESS) {
+        fs.writeFileSync(usersFile, JSON.stringify(arr, null, 2));
+      }
+      
+      const { password, ...userWithoutPassword } = arr[currentUserIdx];
+      return res.json({ 
+        following: !isFollowing,
+        user: userWithoutPassword
+      });
+    }
+  } catch (e) {
+    console.error('Follow user error:', e.message);
+    res.status(500).json({ message: 'Error following user' });
   }
 });
 

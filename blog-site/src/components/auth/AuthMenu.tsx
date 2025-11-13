@@ -117,6 +117,12 @@ export default function AuthMenu({ mobile }: { mobile?: boolean }) {
             <div className="text-xs text-gray-500 dark:text-gray-400">{user.email}</div>
           </div>
         </div>
+        <Link
+          href="/profile"
+          className="w-full px-4 py-2 text-sm bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition text-center font-medium"
+        >
+          My Profile
+        </Link>
         <button
           onClick={handleSignOut}
           className="w-full px-4 py-2 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition"
@@ -182,6 +188,13 @@ export default function AuthMenu({ mobile }: { mobile?: boolean }) {
             </div>
             
             <div className="px-2 py-2">
+              <Link
+                href="/profile"
+                onClick={() => setDropdownOpen(false)}
+                className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition"
+              >
+                My Profile
+              </Link>
               <button
                 onClick={() => {
                   handleSignOut();
