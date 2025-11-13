@@ -21,7 +21,9 @@ export async function fetchWithFallback(path: string, init?: RequestInit): Promi
     let lastErr: any = null;
     for (const base of bases) {
         try {
-            const res = await fetch(`${base}${path}`, init);
+            // Ensure cookies are sent/received for cross-origin auth (session cookie)
+            const mergedInit: RequestInit = { credentials: 'include', ...init };
+            const res = await fetch(`${base}${path}`, mergedInit);
             if (res.ok) return res;
             lastErr = new Error(`HTTP ${res.status} from ${base}${path}`);
         } catch (e: any) {
