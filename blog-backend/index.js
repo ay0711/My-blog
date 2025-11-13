@@ -743,7 +743,7 @@ async function createNotification(type, userId, fromUser, postId = null, postTit
 // GET /api/notifications - Get user's notifications
 app.get('/api/notifications', async (req, res) => {
   try {
-    const user = req.user;
+    const user = await getUserFromReq(req);
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
     
     if (!mongoConnected) {
@@ -767,7 +767,7 @@ app.get('/api/notifications', async (req, res) => {
 // POST /api/notifications/:id/read - Mark notification as read
 app.post('/api/notifications/:id/read', async (req, res) => {
   try {
-    const user = req.user;
+    const user = await getUserFromReq(req);
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
     
     if (!mongoConnected) {
@@ -789,7 +789,7 @@ app.post('/api/notifications/:id/read', async (req, res) => {
 // POST /api/notifications/read-all - Mark all notifications as read
 app.post('/api/notifications/read-all', async (req, res) => {
   try {
-    const user = req.user;
+    const user = await getUserFromReq(req);
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
     
     if (!mongoConnected) {

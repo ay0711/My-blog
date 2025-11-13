@@ -36,5 +36,9 @@ export async function fetchWithFallback(path: string, init?: RequestInit): Promi
 
 export async function fetchJSON<T = unknown>(path: string, init?: RequestInit): Promise<T> {
     const res = await fetchWithFallback(path, init);
+    // Handle 204 No Content responses (e.g., logout)
+    if (res.status === 204) {
+        return {} as T;
+    }
     return res.json();
 }

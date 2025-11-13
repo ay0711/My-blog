@@ -21,21 +21,37 @@ interface Notification {
 }
 
 export default function NotificationBell() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef(user);
+
+  // Update the ref whenever user changes
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   useEffect(() => {
+    // Don't do anything if auth is still loading
+    if (authLoading) {
+      return;
+    }
+    
+    // Only load notifications when user is authenticated
     if (user) {
       loadNotifications();
       // Poll for new notifications every 30 seconds
       const interval = setInterval(loadNotifications, 30000);
       return () => clearInterval(interval);
     }
-  }, [user]);
+    
+    // If user is not authenticated, clear notifications
+    setNotifications([]);
+    setUnreadCount(0);
+  }, [user, authLoading]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -50,12 +66,24 @@ export default function NotificationBell() {
   }, []);
 
   const loadNotifications = async () => {
+    // Don't load notifications if user is not authenticated (check the ref for latest value)
+    if (!userRef.current) {
+      return;
+    }
+    
     try {
       setLoading(true);
       const data = await fetchJSON<{ notifications: Notification[]; unreadCount: number }>('/api/notifications');
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
     } catch (err) {
+      // Silently ignore 401 errors (user not authenticated)
+      if (err instanceof Error && err.message.includes('401')) {
+        // Clear notifications state when unauthorized
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
+      }
       console.error('Failed to load notifications:', err);
     } finally {
       setLoading(false);
@@ -63,6 +91,8 @@ export default function NotificationBell() {
   };
 
   const markAsRead = async (notificationId: string) => {
+    if (!user) return;
+    
     try {
       await fetchJSON(`/api/notifications/${notificationId}/read`, { method: 'POST' });
       setNotifications(prev =>
@@ -75,6 +105,8 @@ export default function NotificationBell() {
   };
 
   const markAllAsRead = async () => {
+    if (!user) return;
+    
     try {
       await fetchJSON('/api/notifications/read-all', { method: 'POST' });
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
