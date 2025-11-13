@@ -893,12 +893,14 @@ app.post('/api/ai/tags', async (req, res) => {
 
 const setSession = (res, user) => {
   const token = jwt.sign({ uid: user.uid, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-  const sameSiteOpt = (process.env.COOKIE_SAMESITE || (IS_SERVERLESS ? 'none' : 'lax')).toLowerCase();
+  // For production, use 'none' to allow cross-origin cookies (localhost -> Render)
+  const isProduction = process.env.NODE_ENV === 'production' || IS_SERVERLESS;
+  const sameSiteOpt = (process.env.COOKIE_SAMESITE || (isProduction ? 'none' : 'lax')).toLowerCase();
   const sameSite = ['lax','strict','none'].includes(sameSiteOpt) ? sameSiteOpt : 'lax';
   res.cookie('session', token, {
     httpOnly: true,
     sameSite,
-    secure: (process.env.NODE_ENV === 'production') || IS_SERVERLESS, // set true in production with HTTPS
+    secure: isProduction, // secure must be true when sameSite='none'
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 };
