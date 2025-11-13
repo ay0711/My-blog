@@ -59,7 +59,7 @@ export default function PostCard({ post, onTagClick }: { post: Post; onTagClick?
           <div className="flex flex-wrap gap-2 mb-4">
             {post.tags.slice(0, 3).map((tag, idx) => (
               <motion.button
-                key={tag}
+                key={`${post.id}-${tag}-${idx}`}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.1 }}

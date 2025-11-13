@@ -6,8 +6,9 @@ import Link from "next/link";
 import { FiArrowLeft, FiCalendar, FiHeart, FiUser, FiClock, FiShare2, FiBookmark, FiLock } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
-
-const API_URL = "http://localhost:5555";
+import { fetchWithFallback, fetchJSON } from "@/lib/api";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 type Comment = { id: string; author: string; content: string; createdAt: string; parentId?: string | null };
 
@@ -55,9 +56,7 @@ export default function PostPage() {
       if (!id) return;
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/api/posts/${id}`);
-        if (!res.ok) throw new Error(`Failed to fetch post ${id}`);
-        const data: Post = await res.json();
+        const data: Post = await fetchJSON(`/api/posts/${id}`);
         setPost(data);
         
         // Check if user has already liked this post
@@ -110,8 +109,7 @@ export default function PostPage() {
     const loadSeries = async () => {
       if (!post?.seriesId) { setSeriesPosts([]); return; }
       try {
-        const res = await fetch(`${API_URL}/api/series/${post.seriesId}`);
-        const data = await res.json();
+        const data = await fetchJSON(`/api/series/${post.seriesId}`);
         setSeriesPosts(Array.isArray(data.posts) ? data.posts : []);
       } catch {}
     };
@@ -127,9 +125,7 @@ export default function PostPage() {
     const check = async () => {
       if (!post?.author) return;
       try {
-        const res = await fetch(`${API_URL}/api/auth/me`, { credentials: 'include' });
-        if (!res.ok) { setFollowing(false); return; }
-        const data = await res.json();
+        const data = await fetchJSON('/api/auth/me');
         const list: string[] = data.user?.followingAuthors || [];
         setFollowing(list.includes(post.author));
       } catch { setFollowing(false); }
@@ -172,11 +168,8 @@ export default function PostPage() {
         setPost({ ...post, likes: Math.max(0, (post.likes || 0) - 1) });
         
         // Send unlike request to server
-        const res = await fetch(`${API_URL}/api/posts/${post.id}/unlike`, { method: "POST" });
-        if (res.ok) {
-          const updated: Post = await res.json();
-          setPost(updated);
-        }
+        const updated: Post = await fetchJSON(`/api/posts/${post.id}/unlike`, { method: "POST" });
+        setPost(updated);
       } else {
         // Like: add to localStorage and increase likes
         likedPosts.push(post.id);
@@ -185,11 +178,8 @@ export default function PostPage() {
         setPost({ ...post, likes: (post.likes || 0) + 1 });
         
         // Send like request to server
-        const res = await fetch(`${API_URL}/api/posts/${post.id}/like`, { method: "POST" });
-        if (res.ok) {
-          const updated: Post = await res.json();
-          setPost(updated);
-        }
+        const updated: Post = await fetchJSON(`/api/posts/${post.id}/like`, { method: "POST" });
+        setPost(updated);
       }
     } catch (error) {
       console.error("Failed to toggle like:", error);
@@ -218,15 +208,12 @@ export default function PostPage() {
       }
       setPost({ ...post, reactions: nextReactions });
 
-      const res = await fetch(`${API_URL}/api/posts/${post.id}/react`, {
+      const updated: Post = await fetchJSON(`/api/posts/${post.id}/react`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: removing ? undefined : type, prevType: prev || undefined })
       });
-      if (res.ok) {
-        const updated: Post = await res.json();
-        setPost(updated);
-      }
+      setPost(updated);
 
       // update localStorage map
       const raw = localStorage.getItem('postReactions') || '{}';
@@ -282,7 +269,7 @@ export default function PostPage() {
       return;
     }
     try {
-      const res = await fetch(`${API_URL}/api/posts/${post.id}/comments`, {
+      const res = await fetchWithFallback(`/api/posts/${post.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ author: author.trim(), content: comment.trim(), parentId: replyTo || null }),
@@ -291,8 +278,7 @@ export default function PostPage() {
         setAuthor("");
         setComment("");
         setReplyTo(null);
-        const r = await fetch(`${API_URL}/api/posts/${post.id}`);
-        const data: Post = await r.json();
+        const data: Post = await fetchJSON(`/api/posts/${post.id}`);
         setPost(data);
       }
     } catch (error) {
@@ -335,6 +321,18 @@ export default function PostPage() {
 
   return (
     <div className="bg-gray-50 dark:bg-gray-950 min-h-screen py-6 sm:py-8">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
       <div id="read-progress" className="fixed top-0 left-0 h-1.5 bg-indigo-600 z-[60]" style={{ width: 0 }} />
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <motion.a
@@ -395,19 +393,16 @@ export default function PostPage() {
                 <button
                   onClick={async () => {
                     try {
-                      const r = await fetch(`${API_URL}/api/users/follow`, {
+                      const j = await fetchJSON('/api/users/follow', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
                         body: JSON.stringify({ author: post.author })
                       });
-                      if (r.ok) {
-                        const j = await r.json();
-                        setFollowing((j.followingAuthors || []).includes(post.author));
-                      } else {
-                        alert('Please sign in to follow authors');
-                      }
-                    } catch {}
+                      setFollowing((j.followingAuthors || []).includes(post.author));
+                      toast.success(following ? 'Unfollowed author' : 'Now following author!');
+                    } catch {
+                      toast.warning('Please sign in to follow authors');
+                    }
                   }}
                   className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition text-sm ${following ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                 >

@@ -7,8 +7,7 @@ import { FiMail, FiLock, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import GoogleIcon from '@/components/icons/GoogleIcon';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5555';
+import { fetchWithFallback } from '@/lib/api';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -31,10 +30,9 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/signup`, {
+      const res = await fetchWithFallback('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ email, password, name })
       });
 
@@ -62,10 +60,9 @@ export default function SignUpPage() {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
 
-      const res = await fetch(`${API_URL}/api/auth/firebase`, {
+      const res = await fetchWithFallback('/api/auth/firebase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ idToken })
       });
 

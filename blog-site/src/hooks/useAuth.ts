@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5555';
+import { fetchJSON } from '@/lib/api';
 
 type User = {
   uid: string;
@@ -20,13 +19,8 @@ export function useAuth() {
 
   const checkAuth = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/auth/me`, { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-      } else {
-        setUser(null);
-      }
+      const data = await fetchJSON('/api/auth/me');
+      setUser(data.user);
     } catch {
       setUser(null);
     } finally {

@@ -7,8 +7,9 @@ import PostCard from '@/components/PostCard';
 import FeaturedCarousel from '@/components/FeaturedCarousel';
 import Sidebar from '@/components/Sidebar';
 import { FiSearch } from 'react-icons/fi';
+import { fetchJSON, fetchWithFallback } from '@/lib/api';
 
-const API_URL = 'http://localhost:5555';
+// API base is resolved by fetchJSON using NEXT_PUBLIC_API_URLS/NEXT_PUBLIC_API_URL
 
 type Post = {
   id: string;
@@ -41,6 +42,8 @@ export default function HomePage() {
   const [trendingTags, setTrendingTags] = useState<TrendingTag[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [seeding, setSeeding] = useState(false);
 
   const handleCategoryClick = (category: string) => {
     setSelectedTag(category);
@@ -73,6 +76,34 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchTrendingTags();
+    // Only check for auto-seed if posts haven't been fetched yet
+    const checkAndSeed = async () => {
+      try {
+        // Check if we have any posts in database
+        const data = await fetchJSON<{ total: number }>('/api/posts?limit=1');
+        if (data.total === 0) {
+          // No posts found, trigger batch import
+          console.log('📥 Database is empty. Auto-importing news articles...');
+          setSeeding(true);
+          try {
+            const result = await fetchWithFallback('/api/news/import-batch', { method: 'POST' });
+            const importData = await result.json();
+            console.log('✅ Auto-import completed:', importData);
+            // Refresh all data after successful import
+            await Promise.all([fetchPosts(), fetchTrending(), fetchFeatured(), fetchTrendingTags()]);
+          } catch (importError) {
+            console.error('❌ Auto-import failed:', importError);
+          } finally {
+            setSeeding(false);
+          }
+        } else {
+          console.log(`✅ Database has ${data.total} posts ready to display`);
+        }
+      } catch (error) {
+        console.warn('⚠️ Auto-seed check skipped:', error);
+      }
+    };
+    checkAndSeed();
   }, []);
 
   const fetchPosts = async () => {
@@ -89,12 +120,17 @@ export default function HomePage() {
       if (startDate) params.set('startDate', startDate);
       if (endDate) params.set('endDate', endDate);
 
-      const res = await fetch(`${API_URL}/api/posts?${params}`);
-      const data = await res.json();
+      const data = await fetchJSON<{ posts: Post[]; total: number }>(`/api/posts?${params}`);
       setPosts(data.posts || []);
       setTotal(data.total || 0);
+      setTotalPages(Math.ceil((data.total || 0) / 9));
+      
+      console.log(`📚 Loaded ${data.posts?.length || 0} posts (Page ${page} of ${Math.ceil((data.total || 0) / 9)})`);
     } catch (error) {
-      console.error('Failed to fetch posts:', error);
+      console.error('❌ Failed to fetch posts:', error);
+      setPosts([]);
+      setTotal(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -102,8 +138,7 @@ export default function HomePage() {
 
   const fetchTrendingTags = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/tags/trending?limit=20`);
-      const data = await res.json();
+      const data = await fetchJSON<{ tags: TrendingTag[] }>(`/api/tags/trending?limit=20`);
       setTrendingTags(data.tags || []);
     } catch (error) {
       console.error('Failed to fetch trending tags:', error);
@@ -112,8 +147,7 @@ export default function HomePage() {
 
   const fetchTrending = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/posts?sort=popular&limit=5`);
-      const data = await res.json();
+      const data = await fetchJSON<{ posts: Post[] }>(`/api/posts?sort=popular&limit=5`);
       setTrending(data.posts || []);
     } catch (error) {
       console.error('Failed to fetch trending:', error);
@@ -127,8 +161,7 @@ export default function HomePage() {
       const featuredPosts: Post[] = [];
       
       for (const category of categories) {
-        const res = await fetch(`${API_URL}/api/posts?tag=${category}&limit=1&sort=popular`);
-        const data = await res.json();
+        const data = await fetchJSON<{ posts: Post[] }>(`/api/posts?tag=${category}&limit=1&sort=popular`);
         if (data.posts && data.posts.length > 0) {
           featuredPosts.push(data.posts[0]);
         }
@@ -140,7 +173,6 @@ export default function HomePage() {
     }
   };
 
-  const totalPages = Math.ceil(total / 9);
   const gridPosts = posts;
 
   return (
@@ -275,10 +307,23 @@ export default function HomePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Posts Grid */}
           <div className="lg:col-span-2">
-            {loading ? (
+            {seeding ? (
+              <div className="text-center py-16 px-4">
+                <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mb-4"></div>
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                  Welcome to ModernBlog! 🎉
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-2">
+                  We're importing fresh news articles for you...
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-500">
+                  This will only take a moment
+                </p>
+              </div>
+            ) : loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-                <p className="mt-4 text-gray-600">Loading posts...</p>
+                <p className="mt-4 text-gray-600 dark:text-gray-400">Loading posts...</p>
               </div>
             ) : gridPosts.length > 0 ? (
               <>
@@ -400,15 +445,31 @@ export default function HomePage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="text-center py-12 bg-white dark:bg-[#0f1329] border border-indigo-200 dark:border-purple-500/30 rounded-lg shadow-lg"
+                className="text-center py-16 px-6 bg-white dark:bg-[#0f1329] border border-indigo-200 dark:border-purple-500/30 rounded-lg shadow-lg"
               >
-                <p className="text-gray-600 dark:text-gray-300">No posts found. Try creating one!</p>
-                <a
-                  href="/create"
-                  className="mt-4 inline-block px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-all"
-                >
-                  Create Post
-                </a>
+                <div className="mb-6">
+                  <div className="text-6xl mb-4">📰</div>
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                    No Posts Yet
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    Get started by importing news articles or creating your own content!
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <a
+                    href="/news"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-all font-medium"
+                  >
+                    📥 Import News
+                  </a>
+                  <a
+                    href="/create"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 text-indigo-600 dark:text-purple-400 border-2 border-indigo-600 dark:border-purple-500 rounded-lg hover:bg-indigo-50 dark:hover:bg-gray-700 transition-all font-medium"
+                  >
+                    ✍️ Create Post
+                  </a>
+                </div>
               </motion.div>
             )}
           </div>

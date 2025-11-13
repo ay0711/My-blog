@@ -3,8 +3,9 @@ import { useState, useEffect } from 'react';
 import { FiZap, FiLoader } from 'react-icons/fi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-
-const API_URL = 'http://localhost:5555';
+import { fetchWithFallback, fetchJSON } from '@/lib/api';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function CreatePage() {
   const router = useRouter();
@@ -34,8 +35,7 @@ export default function CreatePage() {
 
   const fetchPost = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/posts/${editId}`);
-      const data = await res.json();
+      const data = await fetchJSON(`/api/posts/${editId}`);
       setForm({
         title: data.title,
         content: data.content,
@@ -47,13 +47,30 @@ export default function CreatePage() {
         seriesId: data.seriesId || '',
         partNumber: data.partNumber ?? '',
       });
+      toast.success('Post loaded successfully!');
     } catch (error) {
       console.error('Failed to fetch post:', error);
+      toast.error('Failed to load post. Please try again.');
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!form.title.trim()) {
+      toast.error('Please enter a title');
+      return;
+    }
+    if (!form.author.trim()) {
+      toast.error('Please enter an author name');
+      return;
+    }
+    if (!form.content.trim()) {
+      toast.error('Please enter some content');
+      return;
+    }
+    
     setLoading(true);
 
     const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean);
@@ -70,30 +87,46 @@ export default function CreatePage() {
     };
 
     try {
-      const url = editId ? `${API_URL}/api/posts/${editId}` : `${API_URL}/api/posts`;
+      const url = editId ? `/api/posts/${editId}` : '/api/posts';
       const method = editId ? 'PUT' : 'POST';
       
-      const res = await fetch(url, {
+      const res = await fetchWithFallback(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
       if (res.ok) {
-        router.push('/');
+        toast.success(editId ? 'Post updated successfully!' : 'Post created successfully!');
+        setTimeout(() => router.push('/'), 1500);
+      } else {
+        toast.error('Failed to save post. Please try again.');
       }
     } catch (error) {
       console.error('Failed to save post:', error);
+      toast.error('An error occurred while saving. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleAIGenerate = async () => {
-    if (!aiPrompt.trim()) return;
+    // Validation before AI generation
+    if (!aiPrompt.trim()) {
+      toast.warning('Please enter a prompt for AI generation');
+      return;
+    }
+    
+    if (!form.author.trim()) {
+      toast.warning('Please fill in the Author field before using AI generation');
+      return;
+    }
+    
     setAiLoading(true);
+    toast.info('Generating content with AI...');
+    
     try {
-      const res = await fetch(`${API_URL}/api/ai/generate`, {
+      const res = await fetchWithFallback('/api/ai/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: aiPrompt.trim(), maxOutputTokens: 1024 }),
@@ -105,23 +138,30 @@ export default function CreatePage() {
           title: prev.title || data.text.split('\n')[0].replace(/^#+\s*/, '').slice(0, 120),
           content: prev.content ? prev.content + "\n\n" + data.text : data.text,
         }));
+        toast.success('AI content generated successfully!');
+        
         // Try to auto-suggest tags
         try {
-          const tRes = await fetch(`${API_URL}/api/ai/tags`, {
+          const tJson = await fetchJSON('/api/ai/tags', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: data.text }),
           });
-          const tJson = await tRes.json();
           if (Array.isArray(tJson?.tags) && tJson.tags.length) {
             const existing = form.tags ? form.tags.split(',').map((t) => t.trim()) : [];
             const merged = Array.from(new Set([...existing, ...tJson.tags])).join(',');
             setForm((prev) => ({ ...prev, tags: merged }));
+            toast.success('Tags auto-generated!');
           }
-        } catch {}
+        } catch (tagError) {
+          console.error('Tag generation failed:', tagError);
+        }
+      } else {
+        toast.error('AI generation returned no content');
       }
     } catch (e) {
       console.error('AI generate failed:', e);
+      toast.error('AI generation failed. Please try again.');
     } finally {
       setAiLoading(false);
     }
@@ -129,6 +169,18 @@ export default function CreatePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:bg-gradient-to-br dark:from-[#0b1020] dark:via-[#1a1240] dark:to-[#0f1329] py-8">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
       <div className="max-w-3xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

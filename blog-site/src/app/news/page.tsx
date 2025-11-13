@@ -1,9 +1,12 @@
 'use client';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { fetchWithFallback } from '@/lib/api';
 import { FiSearch, FiDownload } from 'react-icons/fi';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-const API_URL = 'http://localhost:5555';
+// API base is resolved by fetchWithFallback using NEXT_PUBLIC_API_URLS/NEXT_PUBLIC_API_URL
 
 type Article = {
   title: string;
@@ -37,9 +40,9 @@ export default function NewsPage() {
       if (fromDate < maxPast) fromDate = maxPast;
       if (fromDate > now) fromDate = now;
 
-      const params = new URLSearchParams({ ...form, from: fromDate.toISOString().slice(0, 10) });
-      const res = await fetch(`${API_URL}/api/news/search?${params}`);
-      const data = await res.json();
+  const params = new URLSearchParams({ ...form, from: fromDate.toISOString().slice(0, 10) });
+  const res = await fetchWithFallback(`/api/news/search?${params}`);
+  const data = await res.json();
       if (!res.ok) {
         const msg = data?.details?.message || data?.message || 'Unknown error';
         throw new Error(msg);
@@ -47,7 +50,7 @@ export default function NewsPage() {
       setArticles(data.articles || []);
     } catch (error) {
       console.error('Failed to fetch news:', error);
-      alert(`Failed to fetch news: ${(error as Error).message}`);
+      toast.error(`Failed to fetch news: ${(error as Error).message}`);
     } finally {
       setLoading(false);
     }
@@ -56,7 +59,7 @@ export default function NewsPage() {
   const importArticle = async (article: Article, index: number) => {
     setImporting(new Set(importing).add(index));
     try {
-      await fetch(`${API_URL}/api/news/import`, {
+      const res = await fetchWithFallback(`/api/news/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,10 +67,15 @@ export default function NewsPage() {
           from: form.from,
         }),
       });
-      alert('Article imported successfully!');
+      if (res.ok) {
+        toast.success('Article imported successfully!');
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || 'Import failed');
+      }
     } catch (error) {
       console.error('Failed to import:', error);
-      alert('Failed to import article');
+      toast.error(`Failed to import: ${(error as Error).message}`);
     } finally {
       setImporting((prev) => {
         const next = new Set(prev);
@@ -80,16 +88,20 @@ export default function NewsPage() {
   const importAll = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/news/import`, {
+      const res = await fetchWithFallback(`/api/news/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || 'Batch import failed');
+      }
       const data = await res.json();
-      alert(`Imported ${data.imported} articles!`);
+      toast.success(`Successfully imported ${data.imported || 0} articles!`);
     } catch (error) {
       console.error('Failed to import all:', error);
-      alert('Failed to import articles');
+      toast.error(`Failed to import articles: ${(error as Error).message}`);
     } finally {
       setLoading(false);
     }
@@ -97,6 +109,18 @@ export default function NewsPage() {
 
   return (
     <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:bg-gradient-to-br dark:from-[#0b1020] dark:via-[#1a1240] dark:to-[#0f1329] min-h-screen py-8">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
       <div className="max-w-7xl mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -176,14 +200,16 @@ export default function NewsPage() {
               className="bg-white dark:bg-[#0f1329] border border-indigo-100 dark:border-purple-500/30 rounded-lg shadow-lg hover:shadow-xl hover:shadow-purple-500/20 dark:hover:shadow-purple-500/30 overflow-hidden transition-all"
             >
               {article.urlToImage && (
-                <img
-                  src={article.urlToImage}
-                  alt={article.title}
-                  className="w-full h-48 object-cover bg-gray-100"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
+                <div className="relative w-full h-48 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/20 dark:to-purple-900/20">
+                  <img
+                    src={article.urlToImage}
+                    alt={article.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
               )}
               <div className="p-4">
                 <h3 className="font-bold text-lg mb-2 line-clamp-2 text-gray-900 dark:text-gray-100">{article.title}</h3>

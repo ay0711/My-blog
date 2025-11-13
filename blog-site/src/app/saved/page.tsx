@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { FiBookmark, FiTrash2, FiHome } from "react-icons/fi";
-
-const API_URL = "http://localhost:5555";
+import { fetchJSON } from "@/lib/api";
 
 type Post = {
   id: string;
@@ -36,11 +35,8 @@ export default function SavedPage() {
         const results: Post[] = [];
         for (const id of ids) {
           try {
-            const res = await fetch(`${API_URL}/api/posts/${id}`);
-            if (res.ok) {
-              const data = await res.json();
-              results.push({ id: data.id, title: data.title, featuredImage: data.featuredImage, createdAt: data.createdAt });
-            }
+            const data = await fetchJSON(`/api/posts/${id}`);
+            results.push({ id: data.id, title: data.title, featuredImage: data.featuredImage, createdAt: data.createdAt });
           } catch {}
         }
         setPosts(results);
