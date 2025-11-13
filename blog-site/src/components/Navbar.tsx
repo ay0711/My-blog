@@ -2,9 +2,10 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiHome, FiPlusCircle, FiFileText, FiMenu, FiX, FiBookmark } from 'react-icons/fi';
+import { FiHome, FiPlusCircle, FiFileText, FiMenu, FiX, FiBookmark, FiTrendingUp } from 'react-icons/fi';
 import DarkModeToggle from './DarkModeToggle';
 import AuthMenu from './auth/AuthMenu';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -14,14 +15,17 @@ export default function Navbar() {
       <Link href="/" className="flex items-center gap-2 text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition" onClick={onClick}>
         <FiHome /> <span>Home</span>
       </Link>
+      <Link href="/explore" className="flex items-center gap-2 text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition" onClick={onClick}>
+        <FiTrendingUp /> <span>Explore</span>
+      </Link>
       <Link href="/create" className="flex items-center gap-2 text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition" onClick={onClick}>
         <FiPlusCircle /> <span>Create</span>
       </Link>
       <Link href="/news" className="flex items-center gap-2 text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition" onClick={onClick}>
         <FiFileText /> <span>News</span>
       </Link>
-      <Link href="/saved" className="flex items-center gap-2 text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition" onClick={onClick}>
-        <FiBookmark /> <span>Saved</span>
+      <Link href="/bookmarks" className="flex items-center gap-2 text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition" onClick={onClick}>
+        <FiBookmark /> <span>Bookmarks</span>
       </Link>
     </>
   );
@@ -36,6 +40,7 @@ export default function Navbar() {
           <div className="flex gap-6">
             <NavLinks />
           </div>
+          <NotificationBell />
           <DarkModeToggle />
           <AuthMenu />
         </div>

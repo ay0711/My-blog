@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { fetchJSON } from '@/lib/api';
+import NotificationBell from '@/components/NotificationBell';
 
 type User = {
   uid: string;
   email: string;
   name: string;
   avatar?: string;
+  username?: string;
   followingAuthors?: string[];
 };
 

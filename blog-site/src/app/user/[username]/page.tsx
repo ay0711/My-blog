@@ -59,8 +59,8 @@ export default function UserProfilePage() {
         setUser(userData.user);
 
         // Check if current user is following this user
-        if (currentUser && currentUser.following) {
-          setIsFollowing(currentUser.following.includes(userData.user.uid));
+        if (currentUser && 'following' in currentUser && Array.isArray((currentUser as any).following)) {
+          setIsFollowing((currentUser as any).following.includes(userData.user.uid));
         }
 
         // Fetch user's posts
@@ -120,7 +120,7 @@ export default function UserProfilePage() {
     );
   }
 
-  const isOwnProfile = currentUser?.username === username;
+  const isOwnProfile = (currentUser as any)?.uid === user?.uid || (currentUser as any)?.username === username;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

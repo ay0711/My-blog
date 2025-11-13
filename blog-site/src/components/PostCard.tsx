@@ -1,12 +1,15 @@
 'use client';
 import { motion } from 'framer-motion';
-import { FiHeart, FiMessageCircle, FiCalendar, FiClock, FiBookmark } from 'react-icons/fi';
+import { FiHeart, FiMessageCircle, FiCalendar, FiClock } from 'react-icons/fi';
+import RepostButton from './RepostButton';
+import BookmarkButton from './BookmarkButton';
 
 type Post = {
   id: string;
   title: string;
   content: string;
   author: string;
+  authorUsername?: string;
   createdAt: string;
   likes: number;
   comments: unknown[];
@@ -14,6 +17,11 @@ type Post = {
   featuredImage?: string;
   isPinned?: boolean;
   pinnedUntil?: string | null;
+  repostCount?: number;
+  repostedBy?: string[];
+  bookmarkedBy?: string[];
+  isRepost?: boolean;
+  originalPostId?: string;
 };
 
 export default function PostCard({ post, onTagClick }: { post: Post; onTagClick?: (tag: string) => void }) {
@@ -46,6 +54,15 @@ export default function PostCard({ post, onTagClick }: { post: Post; onTagClick?
       </a>
       
       <div className="p-4">
+        {post.isRepost && (
+          <div className="mb-2 flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+            <span>🔄</span>
+            <span>
+              <span className="font-semibold">{post.authorUsername ? `@${post.authorUsername}` : post.author}</span> reposted
+            </span>
+          </div>
+        )}
+        
         {((post.isPinned === true) || (post.pinnedUntil && new Date(post.pinnedUntil) > new Date())) && (
           <span className="inline-block mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-1 rounded">Pinned</span>
         )}
@@ -82,6 +99,15 @@ export default function PostCard({ post, onTagClick }: { post: Post; onTagClick?
             <span className="flex items-center gap-1">
               <FiMessageCircle /> {post.comments?.length || 0}
             </span>
+            <RepostButton 
+              postId={post.id} 
+              initialCount={post.repostCount || 0}
+              initialReposted={false}
+            />
+            <BookmarkButton 
+              postId={post.id}
+              initialBookmarked={false}
+            />
             <span className="hidden sm:flex items-center gap-1">
               <FiClock /> {minutes} min read
             </span>

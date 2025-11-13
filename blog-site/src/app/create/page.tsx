@@ -11,7 +11,7 @@ export default function CreatePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
-  
+
   const [form, setForm] = useState({
     title: '',
     content: '',
@@ -54,7 +54,7 @@ export default function CreatePage() {
         tags: data.tags?.join(', ') || '',
         featuredImage: data.featuredImage || '',
         isPinned: !!data.isPinned,
-        pinnedUntil: data.pinnedUntil ? String(data.pinnedUntil).slice(0,10) : '',
+        pinnedUntil: data.pinnedUntil ? String(data.pinnedUntil).slice(0, 10) : '',
         seriesId: data.seriesId || '',
         partNumber: data.partNumber ?? '',
       });
@@ -67,7 +67,7 @@ export default function CreatePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     if (!form.title.trim()) {
       toast.error('Please enter a title');
@@ -81,7 +81,7 @@ export default function CreatePage() {
       toast.error('Please enter some content');
       return;
     }
-    
+
     setLoading(true);
 
     const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean);
@@ -100,7 +100,7 @@ export default function CreatePage() {
     try {
       const url = editId ? `/api/posts/${editId}` : '/api/posts';
       const method = editId ? 'PUT' : 'POST';
-      
+
       const res = await fetchWithFallback(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -127,15 +127,15 @@ export default function CreatePage() {
       toast.warning('Please enter a prompt for AI generation');
       return;
     }
-    
+
     if (!form.author.trim()) {
       toast.warning('Please fill in the Author field before using AI generation');
       return;
     }
-    
+
     setAiLoading(true);
     toast.info('Generating content with AI...');
-    
+
     try {
       const res = await fetchWithFallback('/api/ai/generate', {
         method: 'POST',
@@ -150,7 +150,7 @@ export default function CreatePage() {
           content: prev.content ? prev.content + "\n\n" + data.text : data.text,
         }));
         toast.success('AI content generated successfully!');
-        
+
         // Try to auto-suggest tags
         try {
           const tJson = await fetchJSON<{ tags?: string[] }>('/api/ai/tags', {
@@ -266,7 +266,6 @@ export default function CreatePage() {
                 required
               />
             </div>
-
             <div>
               <label className="block text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">Featured Image URL (optional)</label>
               <input

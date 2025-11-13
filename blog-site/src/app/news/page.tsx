@@ -40,9 +40,9 @@ export default function NewsPage() {
       if (fromDate < maxPast) fromDate = maxPast;
       if (fromDate > now) fromDate = now;
 
-  const params = new URLSearchParams({ ...form, from: fromDate.toISOString().slice(0, 10) });
-  const res = await fetchWithFallback(`/api/news/search?${params}`);
-  const data = await res.json();
+      const params = new URLSearchParams({ ...form, from: fromDate.toISOString().slice(0, 10) });
+      const res = await fetchWithFallback(`/api/news/search?${params}`);
+      const data = await res.json();
       if (!res.ok) {
         const msg = data?.details?.message || data?.message || 'Unknown error';
         throw new Error(msg);
@@ -214,12 +214,12 @@ export default function NewsPage() {
               <div className="p-4">
                 <h3 className="font-bold text-lg mb-2 line-clamp-2 text-gray-900 dark:text-gray-100">{article.title}</h3>
                 <p className="text-sm text-gray-700 dark:text-gray-300 mb-4 line-clamp-3">{article.description}</p>
-                
+
                 <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-4">
                   <span className="font-medium">{article.source.name}</span>
                   <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <a
                     href={article.url}

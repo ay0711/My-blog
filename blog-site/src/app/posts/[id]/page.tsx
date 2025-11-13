@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { fetchWithFallback, fetchJSON } from "@/lib/api";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { parseMentions } from '@/lib/mentions';
 
 type Comment = { id: string; author: string; content: string; createdAt: string; parentId?: string | null };
 
@@ -531,10 +532,10 @@ export default function PostPage() {
                   const h3 = line.match(/^###\s+(.+)/);
                   const h2 = line.match(/^##\s+(.+)/);
                   const h1 = line.match(/^#\s+(.+)/);
-                  if (h1) return <h1 id={slugify(h1[1])} key={i}>{h1[1]}</h1>;
-                  if (h2) return <h2 id={slugify(h2[1])} key={i}>{h2[1]}</h2>;
-                  if (h3) return <h3 id={slugify(h3[1])} key={i}>{h3[1]}</h3>;
-                  return <p key={i} className="leading-7 text-gray-800 dark:text-gray-200">{line}</p>;
+                  if (h1) return <h1 id={slugify(h1[1])} key={i}>{parseMentions(h1[1])}</h1>;
+                  if (h2) return <h2 id={slugify(h2[1])} key={i}>{parseMentions(h2[1])}</h2>;
+                  if (h3) return <h3 id={slugify(h3[1])} key={i}>{parseMentions(h3[1])}</h3>;
+                  return <p key={i} className="leading-7 text-gray-800 dark:text-gray-200">{parseMentions(line)}</p>;
                 })
               )}
             </div>
