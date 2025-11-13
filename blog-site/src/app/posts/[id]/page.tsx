@@ -33,9 +33,9 @@ type Post = {
 export default function PostPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const id = useMemo(() => {
-    const raw = (params as any)?.id;
+    const raw = (params as { id?: string | string[] })?.id;
     return Array.isArray(raw) ? raw[0] : (raw as string | undefined);
   }, [params]);
 
@@ -144,7 +144,7 @@ export default function PostPage() {
       const bar = document.getElementById('read-progress');
       if (bar) (bar as HTMLDivElement).style.width = `${pct * 100}%`;
     };
-    window.addEventListener('scroll', onScroll, { passive: true } as any);
+    window.addEventListener('scroll', onScroll, { passive: true } as AddEventListenerOptions);
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -287,14 +287,22 @@ export default function PostPage() {
     }
   };
 
-  const buildCommentTree = (list: Comment[]) => {
-    const map = new Map<string, any>();
-    const roots: any[] = [];
+  interface CommentNode extends Comment {
+    children: CommentNode[];
+  }
+
+  const buildCommentTree = (list: Comment[]): CommentNode[] => {
+    const map = new Map<string, CommentNode>();
+    const roots: CommentNode[] = [];
     list.forEach(c => map.set(c.id, { ...c, children: [] }));
     list.forEach(c => {
       const node = map.get(c.id);
-      if (c.parentId && map.has(c.parentId)) map.get(c.parentId).children.push(node);
-      else roots.push(node);
+      if (node && c.parentId && map.has(c.parentId)) {
+        const parent = map.get(c.parentId);
+        if (parent) parent.children.push(node);
+      } else if (node) {
+        roots.push(node);
+      }
     });
     return roots;
   };
@@ -312,9 +320,9 @@ export default function PostPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Post not found</h1>
-          <a href="/" className="text-indigo-600 hover:underline">
+          <Link href="/" className="text-indigo-600 hover:underline">
             Go back home
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -590,12 +598,12 @@ export default function PostPage() {
                   >
                     Add Comment
                   </button>
-                  <a
+                  <Link
                     href="/"
                     className="inline-flex items-center justify-center px-5 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition w-full sm:w-auto"
                   >
                     Back Home
-                  </a>
+                  </Link>
                 </div>
               </form>
             </section>
@@ -606,8 +614,12 @@ export default function PostPage() {
   );
 }
 
+interface CommentNodeType extends Comment {
+  children: CommentNodeType[];
+}
+
 // Recursive comment node component
-function CommentNode({ node, onReply }: { node: any; onReply: (id: string) => void }) {
+function CommentNode({ node, onReply }: { node: CommentNodeType; onReply: (id: string) => void }) {
   return (
     <div className="border border-gray-200 rounded-lg p-3 sm:p-4 mb-3">
       <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
@@ -618,7 +630,7 @@ function CommentNode({ node, onReply }: { node: any; onReply: (id: string) => vo
       <button onClick={() => onReply(node.id)} className="text-xs text-indigo-600 hover:underline">Reply</button>
       {node.children && node.children.length > 0 && (
         <div className="mt-3 space-y-3 pl-4 border-l-2 border-gray-200">
-          {node.children.map((child: any) => (
+          {node.children.map((child: CommentNodeType) => (
             <CommentNode key={child.id} node={child} onReply={onReply} />
           ))}
         </div>

@@ -14,7 +14,7 @@ type Post = {
   authorUsername?: string;
   createdAt: string;
   likes: number;
-  comments: any[];
+  comments: unknown[];
   tags?: string[];
   featuredImage?: string;
   repostCount?: number;
@@ -34,7 +34,7 @@ type User = {
 export default function ExplorePage() {
   const [popularPosts, setPopularPosts] = useState<Post[]>([]);
   const [trendingTags, setTrendingTags] = useState<{ tag: string; count: number }[]>([]);
-  const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
+  // const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'trending' | 'tags' | 'users'>('trending');
 
@@ -82,12 +82,12 @@ export default function ExplorePage() {
 
       // For suggested users, we'd need a users endpoint
       // For now, extract unique authors
-      const uniqueAuthors = Array.from(
-        new Set(allPosts.map(p => p.authorUsername || p.author))
-      ).slice(0, 6);
+      // const uniqueAuthors = Array.from(
+      //   new Set(allPosts.map(p => p.authorUsername || p.author))
+      // ).slice(0, 6);
 
       // This is a placeholder - in production, fetch actual user data
-      setSuggestedUsers([]);
+      // setSuggestedUsers([]);
 
     } catch (err) {
       console.error('Failed to load explore data:', err);

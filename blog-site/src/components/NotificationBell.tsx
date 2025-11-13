@@ -122,14 +122,14 @@ export default function NotificationBell() {
         return (
           <>
             <span className="font-semibold">@{notif.fromUsername}</span> liked your post{' '}
-            {notif.postTitle && <span className="italic">"{notif.postTitle}"</span>}
+            {notif.postTitle && <span className="italic">&ldquo;{notif.postTitle}&rdquo;</span>}
           </>
         );
       case 'comment':
         return (
           <>
             <span className="font-semibold">@{notif.fromUsername}</span> commented on your post
-            {notif.commentText && <span className="text-gray-600 dark:text-gray-400 block text-sm mt-1">"{notif.commentText.substring(0, 50)}{notif.commentText.length > 50 ? '...' : ''}"</span>}
+            {notif.commentText && <span className="text-gray-600 dark:text-gray-400 block text-sm mt-1">&ldquo;{notif.commentText.substring(0, 50)}{notif.commentText.length > 50 ? '...' : ''}&rdquo;</span>}
           </>
         );
       case 'mention':
@@ -148,7 +148,7 @@ export default function NotificationBell() {
         return (
           <>
             <span className="font-semibold">@{notif.fromUsername}</span> reposted your post{' '}
-            {notif.postTitle && <span className="italic">"{notif.postTitle}"</span>}
+            {notif.postTitle && <span className="italic">&ldquo;{notif.postTitle}&rdquo;</span>}
           </>
         );
       default:

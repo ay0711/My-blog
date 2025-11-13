@@ -314,7 +314,7 @@ export default function HomePage() {
                   Welcome to ModernBlog! 🎉
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-2">
-                  We're importing fresh news articles for you...
+                  We&apos;re importing fresh news articles for you...
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-500">
                   This will only take a moment
@@ -369,7 +369,7 @@ export default function HomePage() {
                     {(() => {
                       const maxVisible = 5;
                       let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
-                      let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+                      const endPage = Math.min(totalPages, startPage + maxVisible - 1);
                       
                       // Adjust if we're near the end
                       if (endPage - startPage + 1 < maxVisible) {

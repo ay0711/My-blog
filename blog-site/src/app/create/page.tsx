@@ -1,13 +1,14 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { FiZap, FiLoader } from 'react-icons/fi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { fetchWithFallback, fetchJSON } from '@/lib/api';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Link from 'next/link';
 
-export default function CreatePage() {
+function CreatePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
@@ -331,16 +332,28 @@ export default function CreatePage() {
               >
                 {loading ? 'Saving...' : editId ? 'Update Post' : 'Create Post'}
               </button>
-              <a
+              <Link
                 href="/"
                 className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-slate-700 dark:text-slate-200 px-8 py-3 rounded-lg font-semibold hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-700 transition shadow"
               >
                 Cancel
-              </a>
+              </Link>
             </div>
           </form>
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function CreatePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+      </div>
+    }>
+      <CreatePageContent />
+    </Suspense>
   );
 }
