@@ -1692,6 +1692,74 @@ app.get('/api/users/:username', async (req, res) => {
   }
 });
 
+// GET /api/users/suggested - Get suggested users to follow
+app.get('/api/users/suggested', async (req, res) => {
+  try {
+    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit || '10')));
+    const currentUser = req.user;
+    
+    if (mongoConnected) {
+      // Get users sorted by follower count and post activity
+      const users = await User.find()
+        .select('-password -email')
+        .lean();
+      
+      // Calculate user scores based on followers and activity
+      const scoredUsers = users.map(u => {
+        const followerCount = u.followers?.length || 0;
+        const followingCount = u.following?.length || 0;
+        // Higher score for more followers, bonus for active users (following others)
+        const score = followerCount * 2 + followingCount * 0.5;
+        return { ...u, score };
+      });
+      
+      // Filter out current user if authenticated
+      let filteredUsers = scoredUsers;
+      if (currentUser) {
+        filteredUsers = scoredUsers.filter(u => 
+          u.uid !== currentUser.uid && 
+          !(currentUser.following || []).includes(u.uid)
+        );
+      }
+      
+      // Sort by score and limit
+      const suggested = filteredUsers
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit)
+        .map(({ score, ...user }) => user); // Remove score from response
+      
+      return res.json({ users: suggested });
+    }
+    
+    // File-based fallback
+    const usersFile = path.join(__dirname, 'users.json');
+    if (!fs.existsSync(usersFile)) {
+      return res.json({ users: [] });
+    }
+    
+    const users = JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]');
+    const sanitized = users.map(({ password, email, ...rest }) => rest);
+    
+    let filtered = sanitized;
+    if (currentUser) {
+      filtered = sanitized.filter(u => 
+        u.uid !== currentUser.uid &&
+        !(currentUser.following || []).includes(u.uid)
+      );
+    }
+    
+    // Sort by follower count
+    const suggested = filtered
+      .sort((a, b) => (b.followers?.length || 0) - (a.followers?.length || 0))
+      .slice(0, limit);
+    
+    return res.json({ users: suggested });
+  } catch (e) {
+    console.error('Get suggested users error:', e.message);
+    res.status(500).json({ message: 'Error fetching suggested users' });
+  }
+});
+
 // POST /api/users/follow/:username - Follow/unfollow a user
 app.post('/api/users/follow/:username', async (req, res) => {
   try {

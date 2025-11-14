@@ -5,6 +5,7 @@ import { fetchJSON } from '@/lib/api';
 import { FiTrendingUp, FiHash, FiUsers, FiStar } from 'react-icons/fi';
 import Link from 'next/link';
 import PostCard from '@/components/PostCard';
+import UserCard from '@/components/UserCard';
 
 type Post = {
   id: string;
@@ -34,7 +35,7 @@ type User = {
 export default function ExplorePage() {
   const [popularPosts, setPopularPosts] = useState<Post[]>([]);
   const [trendingTags, setTrendingTags] = useState<{ tag: string; count: number }[]>([]);
-  // const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'trending' | 'tags' | 'users'>('trending');
 
@@ -80,14 +81,14 @@ export default function ExplorePage() {
 
       setTrendingTags(trending);
 
-      // For suggested users, we'd need a users endpoint
-      // For now, extract unique authors
-      // const uniqueAuthors = Array.from(
-      //   new Set(allPosts.map(p => p.authorUsername || p.author))
-      // ).slice(0, 6);
-
-      // This is a placeholder - in production, fetch actual user data
-      // setSuggestedUsers([]);
+      // Fetch suggested users
+      try {
+        const usersData = await fetchJSON<{ users: User[] }>('/api/users/suggested?limit=12');
+        setSuggestedUsers(usersData.users || []);
+      } catch (userErr) {
+        console.error('Failed to load suggested users:', userErr);
+        setSuggestedUsers([]);
+      }
 
     } catch (err) {
       console.error('Failed to load explore data:', err);
@@ -219,14 +220,29 @@ export default function ExplorePage() {
         )}
 
         {activeTab === 'users' && (
-          <div className="text-center py-12">
-            <FiUsers className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-700" />
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-              Coming Soon!
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              User recommendations will appear here. For now, explore posts and discover authors you like!
-            </p>
+          <div className="space-y-4">
+            {suggestedUsers.length > 0 ? (
+              suggestedUsers.map((user, index) => (
+                <motion.div
+                  key={user.uid}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <UserCard user={user} onFollowChange={loadExploreData} />
+                </motion.div>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <FiUsers className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-700" />
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  No Suggestions Yet
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Users will appear here as more people join the platform!
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
