@@ -79,17 +79,19 @@ export default function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed left-0 top-0 bottom-0 w-80 bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
+              className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
             >
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-6">
-                  <Link href="/" onClick={() => setOpen(false)} className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-8">
+                  <Link href="/" onClick={() => setOpen(false)} className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
                   <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100">
-                    <FiX size={20} />
+                    <FiX size={24} />
                   </button>
                 </div>
-                <div className="flex flex-col gap-4">
-                  <NavLinks onClick={() => setOpen(false)} />
+                <div className="flex flex-col gap-6">
+                  <div className="flex flex-col gap-4 text-lg">
+                    <NavLinks onClick={() => setOpen(false)} />
+                  </div>
                   <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
                     <DarkModeToggle />
                   </div>
