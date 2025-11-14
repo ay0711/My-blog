@@ -51,6 +51,8 @@ export default function UserProfilePage() {
   const [followers, setFollowers] = useState<User[]>([]);
   const [following, setFollowing] = useState<User[]>([]);
   const [tabLoading, setTabLoading] = useState(false);
+  const [followingUsers, setFollowingUsers] = useState<Set<string>>(new Set());
+  const [followingLoading, setFollowingLoading] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -65,6 +67,8 @@ export default function UserProfilePage() {
         // Check if current user is following this user
         if (currentUser && 'following' in currentUser && Array.isArray((currentUser as { following?: string[] }).following)) {
           setIsFollowing((currentUser as { following?: string[] }).following?.includes(userData.user.uid) || false);
+          // Set the list of users the current user is following
+          setFollowingUsers(new Set((currentUser as { following?: string[] }).following || []));
         }
 
         // Fetch user's posts
@@ -107,6 +111,47 @@ export default function UserProfilePage() {
       console.error('Error following user:', err);
     } finally {
       setFollowLoading(false);
+    }
+  };
+
+  const handleFollowUser = async (targetUsername: string, targetUid: string) => {
+    if (!currentUser) {
+      router.push('/sign-in');
+      return;
+    }
+
+    try {
+      setFollowingLoading(prev => new Set(prev).add(targetUid));
+      const data = await fetchJSON<{ following: boolean }>(`/api/users/follow/${targetUsername}`, {
+        method: 'POST',
+      });
+      
+      // Update the followingUsers set
+      setFollowingUsers(prev => {
+        const newSet = new Set(prev);
+        if (data.following) {
+          newSet.add(targetUid);
+        } else {
+          newSet.delete(targetUid);
+        }
+        return newSet;
+      });
+
+      // Reload current user data to update their following list
+      if (currentUser && 'uid' in currentUser) {
+        const updatedCurrentUser = await fetchJSON<{ user: User }>(`/api/auth/me`);
+        if (updatedCurrentUser.user) {
+          setFollowingUsers(new Set(updatedCurrentUser.user.following || []));
+        }
+      }
+    } catch (err: unknown) {
+      console.error('Error following user:', err);
+    } finally {
+      setFollowingLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(targetUid);
+        return newSet;
+      });
     }
   };
 
@@ -402,6 +447,19 @@ export default function UserProfilePage() {
                             <p className="text-sm text-gray-600 dark:text-gray-400">@{follower.username}</p>
                             {follower.bio && <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{follower.bio}</p>}
                           </div>
+                          {currentUser && follower.uid !== (currentUser as { uid?: string }).uid && (
+                            <button
+                              onClick={() => handleFollowUser(follower.username, follower.uid)}
+                              disabled={followingLoading.has(follower.uid)}
+                              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                                followingUsers.has(follower.uid)
+                                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                              } disabled:opacity-50`}
+                            >
+                              {followingLoading.has(follower.uid) ? 'Loading...' : followingUsers.has(follower.uid) ? 'Following' : 'Follow'}
+                            </button>
+                          )}
                         </div>
                       </motion.div>
                     ))}
@@ -443,6 +501,19 @@ export default function UserProfilePage() {
                             <p className="text-sm text-gray-600 dark:text-gray-400">@{followedUser.username}</p>
                             {followedUser.bio && <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{followedUser.bio}</p>}
                           </div>
+                          {currentUser && followedUser.uid !== (currentUser as { uid?: string }).uid && (
+                            <button
+                              onClick={() => handleFollowUser(followedUser.username, followedUser.uid)}
+                              disabled={followingLoading.has(followedUser.uid)}
+                              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                                followingUsers.has(followedUser.uid)
+                                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                              } disabled:opacity-50`}
+                            >
+                              {followingLoading.has(followedUser.uid) ? 'Loading...' : followingUsers.has(followedUser.uid) ? 'Unfollow' : 'Follow'}
+                            </button>
+                          )}
                         </div>
                       </motion.div>
                     ))}
