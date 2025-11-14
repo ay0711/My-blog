@@ -25,9 +25,12 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const userRef = useRef(user);
+      <button
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+        aria-label="Notifications"
+        onClick={() => setIsOpen(!isOpen)}
+        className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-md"
 
   // Update the ref whenever user changes
   useEffect(() => {
@@ -39,12 +42,12 @@ export default function NotificationBell() {
     if (authLoading) {
       return;
     }
-    
-    // Only load notifications when user is authenticated
-    if (user) {
-      loadNotifications();
-      // Poll for new notifications every 30 seconds
-      const interval = setInterval(loadNotifications, 30000);
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute right-0 mt-2 md:w-96 w-[92vw] max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
       return () => clearInterval(interval);
     }
     
@@ -52,7 +55,7 @@ export default function NotificationBell() {
     setNotifications([]);
     setUnreadCount(0);
   }, [user, authLoading]);
-
+                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none"
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -60,7 +63,7 @@ export default function NotificationBell() {
         setIsOpen(false);
       }
     };
-
+            <div className="max-h-[70vh] overflow-y-auto overscroll-contain">
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -80,9 +83,9 @@ export default function NotificationBell() {
       // Silently ignore 401 errors (user not authenticated)
       if (err instanceof Error && err.message.includes('401')) {
         // Clear notifications state when unauthorized
-        setNotifications([]);
-        setUnreadCount(0);
-        return;
+                      className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 ${
+                        !notif.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''
+                      }`}
       }
       console.error('Failed to load notifications:', err);
     } finally {
