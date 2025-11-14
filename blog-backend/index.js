@@ -1989,52 +1989,60 @@ app.post('/api/users/follow/:username', async (req, res) => {
           { $addToSet: { followers: user.uid } }
         );
         
-        // Create notification to target user
-        console.log(`📬 Creating follow notification for user ${targetUser.uid} from ${user.username}`);
-        const notification = await createNotification('follow', targetUser.uid, user);
-        console.log(`✅ Notification created:`, notification ? 'Success' : 'Failed');
-        
-        // Send email notification if email is configured and user has email notifications enabled
-        const emailSettings = targetUser.notificationSettings?.emailNotifications;
-        const shouldSendEmail = mailTransporter && 
-                               targetUser.email && 
-                               emailSettings?.enabled !== false && 
-                               emailSettings?.follows !== false;
-        
-        if (shouldSendEmail) {
+        // Handle notifications and emails asynchronously (don't wait for them)
+        // This makes the follow action much faster for the user
+        setImmediate(async () => {
           try {
-            console.log(`📧 Sending follow email to ${targetUser.email}`);
-            await mailTransporter.sendMail({
-              from: EMAIL_FROM,
-              to: targetUser.email,
-              subject: `${user.name} started following you!`,
-              html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h2 style="color: #4F46E5;">New Follower!</h2>
-                  <p>Hi ${targetUser.name},</p>
-                  <p><strong>${user.name}</strong> (@${user.username}) started following you on ModernBlog.</p>
-                  <div style="margin: 20px 0; padding: 15px; background: #F3F4F6; border-radius: 8px;">
-                    <p style="margin: 0;"><strong>${user.name}</strong></p>
-                    <p style="margin: 5px 0; color: #6B7280;">@${user.username}</p>
-                    ${user.bio ? `<p style="margin: 10px 0;">${user.bio}</p>` : ''}
-                  </div>
-                  <a href="${process.env.FRONTEND_ORIGIN || 'http://localhost:3000'}/user/${user.username}" 
-                     style="display: inline-block; padding: 10px 20px; background: #4F46E5; color: white; text-decoration: none; border-radius: 6px; margin-top: 10px;">
-                    View Profile
-                  </a>
-                  <p style="margin-top: 20px; color: #6B7280; font-size: 12px;">
-                    You received this email because someone followed you on ModernBlog.
-                  </p>
-                </div>
-              `
-            });
-            console.log(`✅ Follow email sent successfully to ${targetUser.email}`);
-          } catch (emailErr) {
-            console.error('Failed to send follow email:', emailErr);
+            // Create notification to target user
+            console.log(`📬 Creating follow notification for user ${targetUser.uid} from ${user.username}`);
+            const notification = await createNotification('follow', targetUser.uid, user);
+            console.log(`✅ Notification created:`, notification ? 'Success' : 'Failed');
+            
+            // Send email notification if email is configured and user has email notifications enabled
+            const emailSettings = targetUser.notificationSettings?.emailNotifications;
+            const shouldSendEmail = mailTransporter && 
+                                   targetUser.email && 
+                                   emailSettings?.enabled !== false && 
+                                   emailSettings?.follows !== false;
+            
+            if (shouldSendEmail) {
+              try {
+                console.log(`📧 Sending follow email to ${targetUser.email}`);
+                await mailTransporter.sendMail({
+                  from: EMAIL_FROM,
+                  to: targetUser.email,
+                  subject: `${user.name} started following you!`,
+                  html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                      <h2 style="color: #4F46E5;">New Follower!</h2>
+                      <p>Hi ${targetUser.name},</p>
+                      <p><strong>${user.name}</strong> (@${user.username}) started following you on ModernBlog.</p>
+                      <div style="margin: 20px 0; padding: 15px; background: #F3F4F6; border-radius: 8px;">
+                        <p style="margin: 0;"><strong>${user.name}</strong></p>
+                        <p style="margin: 5px 0; color: #6B7280;">@${user.username}</p>
+                        ${user.bio ? `<p style="margin: 10px 0;">${user.bio}</p>` : ''}
+                      </div>
+                      <a href="${process.env.FRONTEND_ORIGIN || 'http://localhost:3000'}/user/${user.username}" 
+                         style="display: inline-block; padding: 10px 20px; background: #4F46E5; color: white; text-decoration: none; border-radius: 6px; margin-top: 10px;">
+                        View Profile
+                      </a>
+                      <p style="margin-top: 20px; color: #6B7280; font-size: 12px;">
+                        You received this email because someone followed you on ModernBlog.
+                      </p>
+                    </div>
+                  `
+                });
+                console.log(`✅ Follow email sent successfully to ${targetUser.email}`);
+              } catch (emailErr) {
+                console.error('Failed to send follow email:', emailErr);
+              }
+            } else {
+              console.log(`⏭️  Skipping email: mailTransporter=${!!mailTransporter}, email=${!!targetUser.email}, enabled=${emailSettings?.enabled}, follows=${emailSettings?.follows}`);
+            }
+          } catch (err) {
+            console.error('Error in background notification/email processing:', err);
           }
-        } else {
-          console.log(`⏭️  Skipping email: mailTransporter=${!!mailTransporter}, email=${!!targetUser.email}, enabled=${emailSettings?.enabled}, follows=${emailSettings?.follows}`);
-        }
+        });
       }
       
       const updatedUser = await User.findOne({ uid: user.uid }).select('-password').lean();
