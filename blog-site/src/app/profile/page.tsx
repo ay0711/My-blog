@@ -116,9 +116,31 @@ export default function ProfilePage() {
                             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{user.name}</h1>
                             <p className="text-gray-600 dark:text-gray-400">@{(user as { username?: string }).username || user.email.split('@')[0]}</p>
                             <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">{user.email}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                                {posts.length} {posts.length === 1 ? 'post' : 'posts'} published
-                            </p>
+                            
+                            {/* Follower/Following counts and posts */}
+                            <div className="flex items-center gap-4 mt-2">
+                              <p className="text-sm text-gray-500 dark:text-gray-500">
+                                {posts.length} {posts.length === 1 ? 'post' : 'posts'}
+                              </p>
+                              <Link 
+                                href={`/user/${(user as { username?: string }).username || user.email.split('@')[0]}`}
+                                className="text-sm hover:underline cursor-pointer"
+                              >
+                                <span className="font-bold text-gray-900 dark:text-gray-100">
+                                  {((user as { following?: string[] }).following?.length || 0)}
+                                </span>
+                                <span className="text-gray-600 dark:text-gray-400 ml-1">Following</span>
+                              </Link>
+                              <Link 
+                                href={`/user/${(user as { username?: string }).username || user.email.split('@')[0]}`}
+                                className="text-sm hover:underline cursor-pointer"
+                              >
+                                <span className="font-bold text-gray-900 dark:text-gray-100">
+                                  {((user as { followers?: string[] }).followers?.length || 0)}
+                                </span>
+                                <span className="text-gray-600 dark:text-gray-400 ml-1">Followers</span>
+                              </Link>
+                            </div>
                         </div>
                     </div>
                 </motion.div>
