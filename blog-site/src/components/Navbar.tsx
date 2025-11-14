@@ -88,8 +88,10 @@ export default function Navbar() {
         </div>
 
         {/* Mobile right side icons */}
-        <div className="md:hidden flex items-center gap-2">
+        <div className="md:hidden flex items-center gap-3">
           <NotificationBell />
+          <DarkModeToggle />
+          <AuthMenu />
         </div>
       </div>
 
@@ -114,26 +116,20 @@ export default function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="fixed inset-0 w-full sm:w-[320px] sm:h-[70vh] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
+              className="fixed top-0 left-0 bottom-0 w-[85vw] max-w-[320px] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
             >
-              <div className="flex flex-col min-h-full p-6">
-                <div className="flex items-center justify-between mb-6 h-14">
-                  <Link href="/" onClick={() => setOpen(false)} className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
-                  <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100">
-                    <FiX size={24} />
+              <div className="flex flex-col h-full p-5">
+                <div className="flex items-center justify-between mb-8">
+                  <Link href="/" onClick={() => setOpen(false)} className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
+                  <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100" aria-label="Close menu">
+                    <FiX size={22} />
                   </button>
                 </div>
-                <div className="flex-1 flex flex-col gap-6">
-                  <div className="flex flex-col gap-1">
+                <nav className="flex-1 flex flex-col">
+                  <div className="flex flex-col gap-2">
                     <NavLinks onClick={() => setOpen(false)} mobile />
                   </div>
-                  <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800">
-                    <DarkModeToggle />
-                  </div>
-                  <div className="pt-2">
-                    <AuthMenu mobile />
-                  </div>
-                </div>
+                </nav>
               </div>
             </motion.div>
           </>
