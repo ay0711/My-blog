@@ -204,7 +204,8 @@ export default function NotificationBell() {
                         }
                       }}
                       whileDrag={{ 
-                        backgroundColor: info => info.offset.x < -40 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.05)'
+                        scale: 1.02,
+                        backgroundColor: 'rgba(239, 68, 68, 0.15)'
                       }}
                       className="relative bg-white dark:bg-gray-900 cursor-grab active:cursor-grabbing"
                       style={{ touchAction: 'pan-x' }}
