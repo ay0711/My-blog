@@ -26,7 +26,7 @@ interface NotificationSettings {
 }
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [settings, setSettings] = useState<NotificationSettings>({
     emailNotifications: {
@@ -51,12 +51,13 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to load
     if (!user) {
       router.push('/sign-in');
       return;
     }
     loadSettings();
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   const loadSettings = async () => {
     try {
@@ -131,8 +132,12 @@ export default function SettingsPage() {
     }));
   };
 
-  if (!user) {
-    return null;
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (

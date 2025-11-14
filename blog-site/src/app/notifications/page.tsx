@@ -22,19 +22,20 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to load
     if (!user) {
       router.push('/sign-in');
       return;
     }
     loadNotifications();
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   const loadNotifications = async () => {
     try {
@@ -158,8 +159,12 @@ export default function NotificationsPage() {
     ? notifications 
     : notifications.filter(n => !n.read);
 
-  if (!user) {
-    return null;
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
