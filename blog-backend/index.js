@@ -365,11 +365,15 @@ app.post('/api/posts', async (req, res) => {
   }
   
   try {
+    const fromUser = await getUserFromReq(req);
+    
     const doc = {
       id: randomUUID(),
       title,
       content,
       author,
+      authorUsername: fromUser?.username,
+      authorId: fromUser?.uid,
       createdAt: new Date(),
       likes: 0,
       reactions: { like:0, love:0, laugh:0, wow:0, sad:0, angry:0 },
@@ -384,6 +388,17 @@ app.post('/api/posts', async (req, res) => {
     
     if (mongoConnected) {
       const created = await Post.create(doc);
+      
+      // Notify mentioned users in title and content
+      if (fromUser) {
+        await notifyMentions({
+          textParts: [title, content],
+          fromUser,
+          postId: created.id,
+          postTitle: title
+        });
+      }
+      
       return res.status(201).json(created);
     }
     
@@ -464,9 +479,19 @@ app.delete('/api/posts/:id', async (req, res) => {
 // POST /api/posts/:id/like
 app.post('/api/posts/:id/like', async (req, res) => {
   try {
+    const actor = await getUserFromReq(req);
+    if (!actor) return res.status(401).json({ message: 'Not authenticated' });
+
     if (mongoConnected) {
       const updated = await Post.findOneAndUpdate({ id: req.params.id }, { $inc: { likes: 1 } }, { new: true }).lean();
-      return updated ? res.json(updated) : res.status(404).json({ message: 'Not found' });
+      if (!updated) return res.status(404).json({ message: 'Not found' });
+      
+      // Create notification if liker is not the post author
+      if (updated.authorId && updated.authorId !== actor.uid) {
+        await createNotification('like', updated.authorId, actor, updated.id, updated.title);
+      }
+      
+      return res.json(updated);
     }
     
     const posts = readPosts();
@@ -572,6 +597,11 @@ app.post('/api/posts/:id/repost', async (req, res) => {
           comments: [],
           repostCount: 0
         });
+        
+        // Create notification to original post author if reposter is not the author
+        if (originalPost.authorId && originalPost.authorId !== user.uid) {
+          await createNotification('repost', originalPost.authorId, user, originalPost.id, originalPost.title);
+        }
         
         return res.json({ reposted: true, repost: repost.toObject() });
       }
@@ -740,6 +770,41 @@ async function createNotification(type, userId, fromUser, postId = null, postTit
   }
 }
 
+// Helper function to extract mentions from text
+function extractMentions(text) {
+  if (!text) return [];
+  const mentionRegex = /@([a-z0-9_]{3,20})/gi;
+  const matches = text.match(mentionRegex);
+  if (!matches) return [];
+  return [...new Set(matches.map(m => m.substring(1).toLowerCase()))]; // Remove @ and dedupe
+}
+
+// Helper function to notify mentioned users
+async function notifyMentions({ textParts, fromUser, postId, postTitle }) {
+  if (!mongoConnected || !textParts || textParts.length === 0) return;
+  
+  const allText = textParts.join(' ');
+  const mentionedUsernames = extractMentions(allText);
+  
+  if (mentionedUsernames.length === 0) return;
+  
+  try {
+    // Find all mentioned users
+    const mentionedUsers = await User.find({ 
+      username: { $in: mentionedUsernames } 
+    }).select('uid username').lean();
+    
+    // Create mention notifications for each user (except the author)
+    for (const user of mentionedUsers) {
+      if (user.uid !== fromUser.uid) {
+        await createNotification('mention', user.uid, fromUser, postId, postTitle);
+      }
+    }
+  } catch (err) {
+    console.error('Notify mentions error:', err);
+  }
+}
+
 // GET /api/notifications - Get user's notifications
 app.get('/api/notifications', async (req, res) => {
   try {
@@ -816,11 +881,29 @@ app.post('/api/posts/:id/comments', async (req, res) => {
   }
   
   try {
+    const actor = await getUserFromReq(req);
+    if (!actor) return res.status(401).json({ message: 'Not authenticated' });
+
     const comment = { id: randomUUID(), author, content, createdAt: new Date(), parentId: parentId || null };
     
     if (mongoConnected) {
       const updated = await Post.findOneAndUpdate({ id: req.params.id }, { $push: { comments: comment } }, { new: true }).lean();
-      return updated ? res.status(201).json(comment) : res.status(404).json({ message: 'Not found' });
+      if (!updated) return res.status(404).json({ message: 'Not found' });
+      
+      // Create notification to post author if commenter is not the author
+      if (updated.authorId && updated.authorId !== actor.uid) {
+        await createNotification('comment', updated.authorId, actor, updated.id, updated.title, content);
+      }
+      
+      // Notify mentioned users in comment
+      await notifyMentions({
+        textParts: [content],
+        fromUser: actor,
+        postId: updated.id,
+        postTitle: updated.title
+      });
+      
+      return res.status(201).json(comment);
     }
     
     const posts = readPosts();
@@ -1623,6 +1706,9 @@ app.post('/api/users/follow/:username', async (req, res) => {
           { uid: targetUser.uid },
           { $addToSet: { followers: user.uid } }
         );
+        
+        // Create notification to target user
+        await createNotification('follow', targetUser.uid, user);
       }
       
       const updatedUser = await User.findOne({ uid: user.uid }).select('-password').lean();
