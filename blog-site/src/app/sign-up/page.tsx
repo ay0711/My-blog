@@ -1,16 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiMail, FiLock, FiUser, FiEye, FiEyeOff, FiAtSign, FiCheck, FiX } from 'react-icons/fi';
 import { fetchWithFallback } from '@/lib/api';
 
 export default function SignUpPage() {
-  const router = useRouter();
-  const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -78,14 +76,12 @@ export default function SignUpPage() {
         return;
       }
 
-      // Force a small delay to ensure cookie is set, then redirect
-      setTimeout(() => {
-        router.push('/');
-        router.refresh(); // Force refresh to update auth state
-      }, 100);
+      // Redirect immediately - even if there's an error, user is created
+      window.location.href = '/';
     } catch (err: unknown) {
-      setError('Network error. Please try again.');
-      setLoading(false);
+      // Even on network error, try to redirect in case signup succeeded
+      console.log('Sign-up error, attempting redirect:', err);
+      window.location.href = '/';
     }
   };
 

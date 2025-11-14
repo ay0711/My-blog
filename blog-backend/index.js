@@ -909,8 +909,66 @@ app.post('/api/posts/:id/react', async (req, res) => {
 });
 
 // ========== TAGS ENDPOINTS ==========
+// GET /api/posts/trending - Get trending posts by likes
+app.get('/api/posts/trending', async (req, res) => {
+  try {
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || '10')));
+
+    if (mongoConnected) {
+      const posts = await Post.find()
+        .sort({ likes: -1, createdAt: -1 })
+        .limit(limit)
+        .lean();
+      return res.json({ posts });
+    }
+
+    const posts = readPosts()
+      .sort((a, b) => (b.likes || 0) - (a.likes || 0))
+      .slice(0, limit);
+    res.json({ posts });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to get trending posts' });
+  }
+});
+
 // GET /api/tags/trending - return top tags with counts
 app.get('/api/tags/trending', async (req, res) => {
+  try {
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '20')));
+
+    if (mongoConnected) {
+      const agg = await Post.aggregate([
+        { $unwind: '$tags' },
+        { $group: { _id: '$tags', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: limit },
+      ]);
+      const tags = agg.map(r => ({ tag: r._id, count: r.count }));
+      return res.json({ tags });
+    }
+
+    const posts = readPosts();
+    const counts = {};
+    for (const p of posts) {
+      for (const t of (p.tags || [])) {
+        const key = String(t).toLowerCase();
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    }
+    const tags = Object.entries(counts)
+      .sort((a,b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([tag, count]) => ({ tag, count }));
+    res.json({ tags });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to get trending tags' });
+  }
+});
+
+// GET /api/posts/tags/trending - Alias for /api/tags/trending (for frontend compatibility)
+app.get('/api/posts/tags/trending', async (req, res) => {
   try {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '20')));
 

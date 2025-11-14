@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 type Post = {
   id: string;
@@ -34,14 +33,6 @@ export default function FeaturedCarousel({ posts }: FeaturedCarouselProps) {
   if (posts.length === 0) return null;
 
   const currentPost = posts[current];
-
-  const next = () => {
-    setCurrent((prev) => (prev + 1) % posts.length);
-  };
-
-  const prev = () => {
-    setCurrent((p) => (p - 1 + posts.length) % posts.length);
-  };
 
   return (
     <div className="relative bg-white rounded-lg shadow-lg overflow-hidden mb-8">
@@ -121,26 +112,6 @@ export default function FeaturedCarousel({ posts }: FeaturedCarouselProps) {
           </a>
         </motion.div>
       </AnimatePresence>
-
-      {/* Navigation Buttons */}
-      <motion.button
-        whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 1)' }}
-        whileTap={{ scale: 0.95 }}
-        onClick={prev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 text-gray-800 p-3 rounded-full shadow-lg transition z-10"
-        aria-label="Previous"
-      >
-        <FiChevronLeft size={24} />
-      </motion.button>
-      <motion.button
-        whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 1)' }}
-        whileTap={{ scale: 0.95 }}
-        onClick={next}
-        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 text-gray-800 p-3 rounded-full shadow-lg transition z-10"
-        aria-label="Next"
-      >
-        <FiChevronRight size={24} />
-      </motion.button>
 
       {/* Dots Indicator */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
