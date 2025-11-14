@@ -54,7 +54,7 @@ export default function UserCard({ user, onFollowChange }: UserCardProps) {
     >
       <div className="flex items-start gap-4">
         {/* Avatar */}
-        <Link href={`/profile/${user.username}`} className="flex-shrink-0">
+        <Link href={`/user/${user.username}`} className="flex-shrink-0">
           {user.avatar ? (
             <img
               src={user.avatar}
@@ -72,7 +72,7 @@ export default function UserCard({ user, onFollowChange }: UserCardProps) {
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-          <Link href={`/profile/${user.username}`} className="group">
+          <Link href={`/user/${user.username}`} className="group">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
               {user.name}
             </h3>
