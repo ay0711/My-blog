@@ -8,6 +8,8 @@ import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import ErrorState from '@/components/ErrorState';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import Toast from '@/components/Toast';
+import { AnimatePresence } from 'framer-motion';
 
 interface User {
   uid: string;
@@ -55,6 +57,7 @@ export default function UserProfilePage() {
   const [tabLoading, setTabLoading] = useState(false);
   const [followingUsers, setFollowingUsers] = useState<Set<string>>(new Set());
   const [followingLoading, setFollowingLoading] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -106,11 +109,25 @@ export default function UserProfilePage() {
       });
       setIsFollowing(data.following);
       
+      // Show success toast
+      setToast({
+        message: data.following ? `You are now following ${user?.name}` : `You unfollowed ${user?.name}`,
+        type: 'success'
+      });
+      
       // Reload user data to update follower count
       const userData = await fetchJSON<{ user: User }>(`/api/users/${username}`);
       setUser(userData.user);
     } catch (err: unknown) {
       console.error('Error following user:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to follow user';
+      
+      setToast({
+        message: errorMessage.includes('waking up') || errorMessage.includes('taking too long')
+          ? 'Server is waking up. Please try again in 30-60 seconds.'
+          : 'Failed to follow user. Please check your connection and try again.',
+        type: 'error'
+      });
     } finally {
       setFollowLoading(false);
     }
@@ -139,6 +156,12 @@ export default function UserProfilePage() {
         return newSet;
       });
 
+      // Show success toast
+      setToast({
+        message: data.following ? `Following @${targetUsername}` : `Unfollowed @${targetUsername}`,
+        type: 'success'
+      });
+
       // Reload current user data to update their following list
       if (currentUser && 'uid' in currentUser) {
         const updatedCurrentUser = await fetchJSON<{ user: User }>(`/api/auth/me`);
@@ -148,6 +171,14 @@ export default function UserProfilePage() {
       }
     } catch (err: unknown) {
       console.error('Error following user:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to follow user';
+      
+      setToast({
+        message: errorMessage.includes('waking up') || errorMessage.includes('taking too long')
+          ? 'Server is waking up. Please try again in 30-60 seconds.'
+          : 'Failed to follow user. Please check your connection and try again.',
+        type: 'error'
+      });
     } finally {
       setFollowingLoading(prev => {
         const newSet = new Set(prev);
@@ -537,6 +568,17 @@ export default function UserProfilePage() {
           </>
         )}
       </div>
+
+      {/* Toast Notifications */}
+      <AnimatePresence>
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

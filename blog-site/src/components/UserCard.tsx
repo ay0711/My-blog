@@ -1,10 +1,9 @@
 'use client';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiUserPlus, FiUserCheck, FiUsers } from 'react-icons/fi';
+import { FiUserPlus, FiUserCheck, FiUsers, FiAlertCircle } from 'react-icons/fi';
 import Link from 'next/link';
 import { fetchJSON } from '@/lib/api';
-import { toast } from 'react-toastify';
 
 interface User {
   uid: string;
@@ -24,23 +23,32 @@ interface UserCardProps {
 export default function UserCard({ user, onFollowChange }: UserCardProps) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFollow = async () => {
     setLoading(true);
+    setError(null);
     try {
       const response = await fetchJSON<{ following: boolean }>(`/api/users/follow/${user.username}`, {
         method: 'POST',
       });
       
       setIsFollowing(response.following);
-      toast.success(response.following ? `You're now following ${user.name}` : `Unfollowed ${user.name}`);
       
       if (onFollowChange) {
         onFollowChange();
       }
-    } catch (error) {
-      console.error('Follow error:', error);
-      toast.error('Failed to update follow status. Please try again.');
+    } catch (err) {
+      console.error('Follow error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to follow user';
+      setError(
+        errorMessage.includes('waking up') || errorMessage.includes('taking too long')
+          ? 'Server is waking up. Please try again in 30-60 seconds.'
+          : 'Connection failed. Please check your network and try again.'
+      );
+      
+      // Clear error after 5 seconds
+      setTimeout(() => setError(null), 5000);
     } finally {
       setLoading(false);
     }
@@ -52,6 +60,13 @@ export default function UserCard({ user, onFollowChange }: UserCardProps) {
       animate={{ opacity: 1, scale: 1 }}
       className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow p-6"
     >
+      {error && (
+        <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
+          <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        </div>
+      )}
+      
       <div className="flex items-start gap-4">
         {/* Avatar */}
         <Link href={`/user/${user.username}`} className="flex-shrink-0">
