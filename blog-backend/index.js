@@ -1663,6 +1663,113 @@ app.get('/api/users/check-username/:username', async (req, res) => {
   }
 });
 
+// GET /api/users/me/settings - Get current user's notification settings (must be before /:username)
+app.get('/api/users/me/settings', async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    let user;
+    if (mongoConnected) {
+      user = await User.findOne({ uid: req.user.uid }).select('notificationSettings').lean();
+    } else {
+      const usersFile = path.join(__dirname, 'users.json');
+      if (fs.existsSync(usersFile)) {
+        const users = JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]');
+        user = users.find(u => u.uid === req.user.uid);
+      }
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Return default settings if not set
+    const settings = user.notificationSettings || {
+      emailNotifications: {
+        enabled: true,
+        likes: true,
+        comments: true,
+        reposts: true,
+        follows: true,
+        mentions: true,
+      },
+      pushNotifications: {
+        enabled: true,
+        likes: true,
+        comments: true,
+        reposts: true,
+        follows: true,
+        mentions: true,
+      },
+    };
+
+    return res.json({ settings });
+  } catch (e) {
+    console.error('Get settings error:', e.message);
+    res.status(500).json({ message: 'Error fetching settings' });
+  }
+});
+
+// POST /api/users/me/settings - Update current user's notification settings (must be before /:username)
+app.post('/api/users/me/settings', async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { emailNotifications, pushNotifications } = req.body;
+
+    // Validate settings structure
+    if (!emailNotifications || !pushNotifications) {
+      return res.status(400).json({ message: 'Invalid settings format' });
+    }
+
+    const settings = {
+      emailNotifications: {
+        enabled: !!emailNotifications.enabled,
+        likes: !!emailNotifications.likes,
+        comments: !!emailNotifications.comments,
+        reposts: !!emailNotifications.reposts,
+        follows: !!emailNotifications.follows,
+        mentions: !!emailNotifications.mentions,
+      },
+      pushNotifications: {
+        enabled: !!pushNotifications.enabled,
+        likes: !!pushNotifications.likes,
+        comments: !!pushNotifications.comments,
+        reposts: !!pushNotifications.reposts,
+        follows: !!pushNotifications.follows,
+        mentions: !!pushNotifications.mentions,
+      },
+    };
+
+    if (mongoConnected) {
+      await User.updateOne(
+        { uid: req.user.uid },
+        { $set: { notificationSettings: settings } }
+      );
+    } else {
+      // File-based fallback
+      const usersFile = path.join(__dirname, 'users.json');
+      if (fs.existsSync(usersFile)) {
+        const users = JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]');
+        const index = users.findIndex(u => u.uid === req.user.uid);
+        if (index !== -1) {
+          users[index].notificationSettings = settings;
+          fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+        }
+      }
+    }
+
+    return res.json({ settings, message: 'Settings updated successfully' });
+  } catch (e) {
+    console.error('Update settings error:', e.message);
+    res.status(500).json({ message: 'Error updating settings' });
+  }
+});
+
 // GET /api/users/suggested - Get suggested users to follow (must be before /:username)
 app.get('/api/users/suggested', async (req, res) => {
   try {
@@ -1760,6 +1867,84 @@ app.get('/api/users/:username', async (req, res) => {
   }
 });
 
+// GET /api/users/:username/followers - Get user's followers list
+app.get('/api/users/:username/followers', async (req, res) => {
+  try {
+    const username = req.params.username.toLowerCase().trim();
+    
+    if (mongoConnected) {
+      const user = await User.findOne({ username }).select('followers').lean();
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Get full user details for each follower
+      const followers = await User.find({ uid: { $in: user.followers || [] } })
+        .select('-password -email')
+        .lean();
+      
+      return res.json({ followers });
+    }
+    
+    // File-based fallback
+    const usersFile = path.join(__dirname, 'users.json');
+    const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
+    const user = arr.find(x => x.username === username);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const followers = arr
+      .filter(u => (user.followers || []).includes(u.uid))
+      .map(({ password, email, ...rest }) => rest);
+    
+    return res.json({ followers });
+  } catch (e) {
+    console.error('Get followers error:', e.message);
+    res.status(500).json({ message: 'Error fetching followers' });
+  }
+});
+
+// GET /api/users/:username/following - Get user's following list
+app.get('/api/users/:username/following', async (req, res) => {
+  try {
+    const username = req.params.username.toLowerCase().trim();
+    
+    if (mongoConnected) {
+      const user = await User.findOne({ username }).select('following').lean();
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Get full user details for each following
+      const following = await User.find({ uid: { $in: user.following || [] } })
+        .select('-password -email')
+        .lean();
+      
+      return res.json({ following });
+    }
+    
+    // File-based fallback
+    const usersFile = path.join(__dirname, 'users.json');
+    const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
+    const user = arr.find(x => x.username === username);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const following = arr
+      .filter(u => (user.following || []).includes(u.uid))
+      .map(({ password, email, ...rest }) => rest);
+    
+    return res.json({ following });
+  } catch (e) {
+    console.error('Get following error:', e.message);
+    res.status(500).json({ message: 'Error fetching following' });
+  }
+});
+
 // POST /api/users/follow/:username - Follow/unfollow a user
 app.post('/api/users/follow/:username', async (req, res) => {
   try {
@@ -1806,6 +1991,44 @@ app.post('/api/users/follow/:username', async (req, res) => {
         
         // Create notification to target user
         await createNotification('follow', targetUser.uid, user);
+        
+        // Send email notification if email is configured and user has email notifications enabled
+        const emailSettings = targetUser.notificationSettings?.emailNotifications;
+        const shouldSendEmail = mailTransporter && 
+                               targetUser.email && 
+                               emailSettings?.enabled !== false && 
+                               emailSettings?.follows !== false;
+        
+        if (shouldSendEmail) {
+          try {
+            await mailTransporter.sendMail({
+              from: EMAIL_FROM,
+              to: targetUser.email,
+              subject: `${user.name} started following you!`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2 style="color: #4F46E5;">New Follower!</h2>
+                  <p>Hi ${targetUser.name},</p>
+                  <p><strong>${user.name}</strong> (@${user.username}) started following you on ModernBlog.</p>
+                  <div style="margin: 20px 0; padding: 15px; background: #F3F4F6; border-radius: 8px;">
+                    <p style="margin: 0;"><strong>${user.name}</strong></p>
+                    <p style="margin: 5px 0; color: #6B7280;">@${user.username}</p>
+                    ${user.bio ? `<p style="margin: 10px 0;">${user.bio}</p>` : ''}
+                  </div>
+                  <a href="${process.env.FRONTEND_ORIGIN || 'http://localhost:3000'}/user/${user.username}" 
+                     style="display: inline-block; padding: 10px 20px; background: #4F46E5; color: white; text-decoration: none; border-radius: 6px; margin-top: 10px;">
+                    View Profile
+                  </a>
+                  <p style="margin-top: 20px; color: #6B7280; font-size: 12px;">
+                    You received this email because someone followed you on ModernBlog.
+                  </p>
+                </div>
+              `
+            });
+          } catch (emailErr) {
+            console.error('Failed to send follow email:', emailErr);
+          }
+        }
       }
       
       const updatedUser = await User.findOne({ uid: user.uid }).select('-password').lean();

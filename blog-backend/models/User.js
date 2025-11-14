@@ -17,6 +17,44 @@ const UserSchema = new mongoose.Schema({
   location: { type: String, default: '' },
   website: { type: String, default: '' },
   verified: { type: Boolean, default: false }, // Verified badge
+  notificationSettings: {
+    type: {
+      emailNotifications: {
+        enabled: { type: Boolean, default: true },
+        likes: { type: Boolean, default: true },
+        comments: { type: Boolean, default: true },
+        reposts: { type: Boolean, default: true },
+        follows: { type: Boolean, default: true },
+        mentions: { type: Boolean, default: true },
+      },
+      pushNotifications: {
+        enabled: { type: Boolean, default: true },
+        likes: { type: Boolean, default: true },
+        comments: { type: Boolean, default: true },
+        reposts: { type: Boolean, default: true },
+        follows: { type: Boolean, default: true },
+        mentions: { type: Boolean, default: true },
+      },
+    },
+    default: () => ({
+      emailNotifications: {
+        enabled: true,
+        likes: true,
+        comments: true,
+        reposts: true,
+        follows: true,
+        mentions: true,
+      },
+      pushNotifications: {
+        enabled: true,
+        likes: true,
+        comments: true,
+        reposts: true,
+        follows: true,
+        mentions: true,
+      },
+    }),
+  },
 });
 
 UserSchema.index({ uid: 1 }, { unique: true });

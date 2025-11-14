@@ -47,6 +47,10 @@ export default function UserProfilePage() {
   const [error, setError] = useState('');
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'posts' | 'followers' | 'following'>('posts');
+  const [followers, setFollowers] = useState<User[]>([]);
+  const [following, setFollowing] = useState<User[]>([]);
+  const [tabLoading, setTabLoading] = useState(false);
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -95,10 +99,49 @@ export default function UserProfilePage() {
         method: 'POST',
       });
       setIsFollowing(data.following);
+      
+      // Reload user data to update follower count
+      const userData = await fetchJSON<{ user: User }>(`/api/users/${username}`);
+      setUser(userData.user);
     } catch (err: unknown) {
       console.error('Error following user:', err);
     } finally {
       setFollowLoading(false);
+    }
+  };
+
+  const loadFollowers = async () => {
+    if (followers.length > 0) return; // Already loaded
+    try {
+      setTabLoading(true);
+      const data = await fetchJSON<{ followers: User[] }>(`/api/users/${username}/followers`);
+      setFollowers(data.followers || []);
+    } catch (err) {
+      console.error('Error loading followers:', err);
+    } finally {
+      setTabLoading(false);
+    }
+  };
+
+  const loadFollowing = async () => {
+    if (following.length > 0) return; // Already loaded
+    try {
+      setTabLoading(true);
+      const data = await fetchJSON<{ following: User[] }>(`/api/users/${username}/following`);
+      setFollowing(data.following || []);
+    } catch (err) {
+      console.error('Error loading following:', err);
+    } finally {
+      setTabLoading(false);
+    }
+  };
+
+  const handleTabChange = (tab: 'posts' | 'followers' | 'following') => {
+    setActiveTab(tab);
+    if (tab === 'followers' && followers.length === 0) {
+      loadFollowers();
+    } else if (tab === 'following' && following.length === 0) {
+      loadFollowing();
     }
   };
 
@@ -191,14 +234,20 @@ export default function UserProfilePage() {
               </div>
 
               <div className="flex items-center gap-6 mb-4">
-                <div>
+                <button
+                  onClick={() => handleTabChange('following')}
+                  className="hover:underline cursor-pointer transition-colors"
+                >
                   <span className="font-bold text-gray-900 dark:text-gray-100">{user.following?.length || 0}</span>
                   <span className="text-gray-600 dark:text-gray-400 ml-1">Following</span>
-                </div>
-                <div>
+                </button>
+                <button
+                  onClick={() => handleTabChange('followers')}
+                  className="hover:underline cursor-pointer transition-colors"
+                >
                   <span className="font-bold text-gray-900 dark:text-gray-100">{user.followers?.length || 0}</span>
                   <span className="text-gray-600 dark:text-gray-400 ml-1">Followers</span>
-                </div>
+                </button>
               </div>
 
               {/* Follow Button */}
@@ -230,52 +279,178 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {/* Posts */}
+      {/* Tabs and Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
-          Posts ({posts.length})
-        </h2>
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+          <button
+            onClick={() => handleTabChange('posts')}
+            className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+              activeTab === 'posts'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            Posts ({posts.length})
+          </button>
+          <button
+            onClick={() => handleTabChange('followers')}
+            className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+              activeTab === 'followers'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            Followers ({user?.followers?.length || 0})
+          </button>
+          <button
+            onClick={() => handleTabChange('following')}
+            className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+              activeTab === 'following'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            Following ({user?.following?.length || 0})
+          </button>
+        </div>
 
-        {posts.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">No posts yet</p>
+        {/* Tab Content */}
+        {tabLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="space-y-6">
-            {posts.map((post) => (
-              <motion.article
-                key={post.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow p-6"
-              >
-                <Link href={`/posts/${post.id}`}>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
-                    {post.title}
-                  </h3>
-                </Link>
-                <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                  {post.content.substring(0, 200)}...
-                </p>
-                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                  <div className="flex items-center gap-4">
-                    <span>{new Date(post.date).toLocaleDateString()}</span>
-                    <span>❤️ {post.likes}</span>
-                    <span>💬 {post.comments}</span>
+          <>
+            {/* Posts Tab */}
+            {activeTab === 'posts' && (
+              <>
+                {posts.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600 dark:text-gray-400">No posts yet</p>
                   </div>
-                  {post.tags && post.tags.length > 0 && (
-                    <div className="flex gap-2">
-                      {post.tags.slice(0, 3).map((tag) => (
-                        <span key={tag} className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded text-xs">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </motion.article>
-            ))}
-          </div>
+                ) : (
+                  <div className="space-y-6">
+                    {posts.map((post) => (
+                      <motion.article
+                        key={post.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow p-6"
+                      >
+                        <Link href={`/posts/${post.id}`}>
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                            {post.title}
+                          </h3>
+                        </Link>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                          {post.content.substring(0, 200)}...
+                        </p>
+                        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                          <div className="flex items-center gap-4">
+                            <span>{new Date(post.date).toLocaleDateString()}</span>
+                            <span>❤️ {post.likes}</span>
+                            <span>💬 {post.comments}</span>
+                          </div>
+                          {post.tags && post.tags.length > 0 && (
+                            <div className="flex gap-2">
+                              {post.tags.slice(0, 3).map((tag) => (
+                                <span key={tag} className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded text-xs">
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </motion.article>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Followers Tab */}
+            {activeTab === 'followers' && (
+              <>
+                {followers.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600 dark:text-gray-400">No followers yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {followers.map((follower) => (
+                      <motion.div
+                        key={follower.uid}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow p-6"
+                      >
+                        <div className="flex items-center gap-4">
+                          <Link href={`/user/${follower.username}`}>
+                            {follower.avatar ? (
+                              <img src={follower.avatar} alt={follower.name} className="w-12 h-12 rounded-full" />
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                {follower.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </Link>
+                          <div className="flex-1">
+                            <Link href={`/user/${follower.username}`} className="font-bold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400">
+                              {follower.name}
+                            </Link>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">@{follower.username}</p>
+                            {follower.bio && <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{follower.bio}</p>}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Following Tab */}
+            {activeTab === 'following' && (
+              <>
+                {following.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600 dark:text-gray-400">Not following anyone yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {following.map((followedUser) => (
+                      <motion.div
+                        key={followedUser.uid}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow p-6"
+                      >
+                        <div className="flex items-center gap-4">
+                          <Link href={`/user/${followedUser.username}`}>
+                            {followedUser.avatar ? (
+                              <img src={followedUser.avatar} alt={followedUser.name} className="w-12 h-12 rounded-full" />
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                {followedUser.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </Link>
+                          <div className="flex-1">
+                            <Link href={`/user/${followedUser.username}`} className="font-bold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400">
+                              {followedUser.name}
+                            </Link>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">@{followedUser.username}</p>
+                            {followedUser.bio && <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{followedUser.bio}</p>}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
       </div>
     </div>
