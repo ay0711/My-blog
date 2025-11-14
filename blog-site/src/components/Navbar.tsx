@@ -22,7 +22,7 @@ export default function Navbar() {
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  const NavLink = ({ href, icon: Icon, children }: { href: string; icon: any; children: React.ReactNode }) => {
+  const NavLink = ({ href, icon: Icon, children }: { href: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) => {
     const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
     return (
       <Link 

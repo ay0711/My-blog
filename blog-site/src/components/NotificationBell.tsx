@@ -238,7 +238,7 @@ export default function NotificationBell() {
                       <FiBell className="w-8 h-8 text-gray-400 dark:text-gray-600" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">No notifications yet</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">When you get notifications, they'll show up here</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">When you get notifications, they&apos;ll show up here</p>
                   </div>
                 ) : (
                   <div>
