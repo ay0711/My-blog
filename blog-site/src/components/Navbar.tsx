@@ -62,7 +62,7 @@ export default function Navbar() {
   }, [open]);
 
   return (
-    <motion.nav initial={{ y: -100 }} animate={{ y: 0 }} className="bg-white/90 backdrop-blur dark:bg-[#0f1430]/90 shadow-md sticky top-0 z-50 border-b border-indigo-100 dark:border-[#1b2150] h-14">
+    <motion.nav role="navigation" aria-label="Primary" initial={{ y: -100 }} animate={{ y: 0 }} className="bg-white/90 backdrop-blur dark:bg-[#0f1430]/90 shadow-md sticky top-0 z-50 border-b border-indigo-100 dark:border-[#1b2150] h-14">
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
         {/* Mobile hamburger on left */}
         <button
@@ -75,7 +75,7 @@ export default function Navbar() {
           {open ? <FiX size={22} /> : <FiMenu size={22} />}
         </button>
 
-        <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
+        <Link href="/" className="text-[22px] font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-4">

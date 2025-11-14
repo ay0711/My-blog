@@ -22,9 +22,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={`${inter.className} bg-indigo-50 text-slate-900 dark:bg-[#0b1020] dark:text-slate-100`}>
+      <body className={`${inter.className} antialiased`}>        
+        <a href="#main" className="skip-link">Skip to content</a>
         <Navbar />
-        <main className="min-h-screen">{children}</main>
+        <main id="main" className="min-h-screen fade-in">{children}</main>
         <Footer />
       </body>
     </html>

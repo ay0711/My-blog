@@ -196,20 +196,25 @@ export default function HomePage() {
   const gridPosts = posts;
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:bg-gradient-to-br dark:from-[#0b1020] dark:via-[#1a1240] dark:to-[#0f1329] min-h-screen">
-      {/* Featured Carousel */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="max-w-7xl mx-auto px-4 pt-8"
-      >
-        <FeaturedCarousel posts={featured} />
-      </motion.div>
+    <div className="min-h-screen">
+      <header className="max-w-7xl mx-auto px-4 pt-8">
+        <div className="mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Discover, Curate & Share Insight</h1>
+          <p className="mt-3 text-gray-600 dark:text-gray-400 measure">ModernBlog surfaces trending topics and fresh articles across technology, science, health and more. Personalize your feed with tags, explore what&apos;s rising, and publish your perspective.</p>
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="pt-2"
+        >
+          <FeaturedCarousel posts={featured} />
+        </motion.div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-10">
         {/* Search & Filter */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -235,7 +240,7 @@ export default function HomePage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="mb-6 space-y-3"
+          className="mb-8 space-y-4"
         >
           {/* Active filters chips */}
           {(selectedTag || selectedTags.length > 0 || startDate || endDate || sort !== 'newest') && (
@@ -324,7 +329,7 @@ export default function HomePage() {
         </motion.div>
 
         {/* Main Grid + Sidebar */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Posts Grid */}
           <div className="lg:col-span-2">
             {seeding ? (
@@ -353,11 +358,11 @@ export default function HomePage() {
               <LoadingState message="Loading posts..." fullPage={false} />
             ) : gridPosts.length > 0 ? (
               <>
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.4 }}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                  className="grid grid-cols-1 md:grid-cols-2 gap-7"
                 >
                   {gridPosts.map((post, i) => (
                     <motion.div
@@ -376,11 +381,11 @@ export default function HomePage() {
                 </motion.div>
 
                 {/* Pagination */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4, duration: 0.5 }}
-                  className="mt-8 flex flex-wrap justify-center items-center gap-2"
+                  className="mt-10 flex flex-wrap justify-center items-center gap-2"
                 >
                   <button
                     onClick={() => handlePageChange(Math.max(1, page - 1))}
