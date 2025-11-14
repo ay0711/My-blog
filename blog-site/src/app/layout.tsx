@@ -25,8 +25,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.className} antialiased`}>        
         <a href="#main" className="skip-link">Skip to content</a>
         <Navbar />
-        <main id="main" className="min-h-screen fade-in">{children}</main>
-        <Footer />
+        {/* Main content area with proper spacing for desktop sidebar and mobile top/bottom bars */}
+        <main id="main" className="min-h-screen lg:ml-[275px] pt-14 pb-16 lg:pt-0 lg:pb-0 fade-in">
+          {children}
+        </main>
+        <div className="lg:ml-[275px]">
+          <Footer />
+        </div>
       </body>
     </html>
   );

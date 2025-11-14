@@ -43,9 +43,9 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Desktop Navbar - Hidden on mobile */}
-      <nav className="hidden lg:block fixed left-0 top-0 h-screen w-[275px] border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-40">
-        <div className="flex flex-col h-full px-3 py-2">
+      {/* Desktop Sidebar - Only visible on lg screens and up */}
+      <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-[275px] border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-40">
+        <div className="flex flex-col h-full w-full px-3 py-2">
           <Link href="/" className="px-4 py-4 mb-2">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
               ModernBlog
@@ -60,7 +60,7 @@ export default function Navbar() {
             <NavLink href="/create" icon={FiPlusCircle}>Create</NavLink>
           </nav>
 
-          <div className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-4">
+          <div className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-4 pb-4">
             <div className="flex items-center justify-between px-4">
               <NotificationBell />
               <DarkModeToggle />
@@ -68,9 +68,9 @@ export default function Navbar() {
             <AuthMenu />
           </div>
         </div>
-      </nav>
+      </aside>
 
-      {/* Mobile Top Navbar */}
+      {/* Mobile Top Navbar - Only visible below lg */}
       <nav className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 z-50">
         <div className="flex items-center justify-between h-full px-4">
           <Link href="/" className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
@@ -83,8 +83,8 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 z-50 safe-area-inset-bottom">
+      {/* Mobile Bottom Navigation Bar - Only visible below lg */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 z-50">
         <div className="flex items-center justify-around h-full px-2">
           <Link 
             href="/"
@@ -142,10 +142,6 @@ export default function Navbar() {
           </Link>
         </div>
       </nav>
-
-      {/* Spacer for mobile layout */}
-      <div className="lg:hidden h-14" />
-      <div className="lg:hidden h-16" />
     </>
   );
 }
