@@ -68,6 +68,10 @@ export default function Navbar() {
           >
             <div className="px-4 py-3 flex flex-col gap-3">
               <NavLinks onClick={() => setOpen(false)} />
+              {/* Mobile Notification Bell */}
+              <div className="pt-2 flex items-center">
+                <NotificationBell />
+              </div>
               <div className="pt-2">
                 <DarkModeToggle />
               </div>
