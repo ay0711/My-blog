@@ -101,6 +101,25 @@ export default function NotificationBell() {
     } catch (e) { console.error('Failed to mark all as read:', e); }
   };
 
+  const clearAll = async () => {
+    if (!user) return;
+    try {
+      await fetchJSON('/api/notifications', { method: 'DELETE' });
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (e) { console.error('Failed to clear all:', e); }
+  };
+
+  const deleteNotification = async (id: string) => {
+    if (!user) return;
+    try {
+      await fetchJSON(`/api/notifications/${id}`, { method: 'DELETE' });
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      const wasUnread = notifications.find(n => n.id === id)?.read === false;
+      if (wasUnread) setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (e) { console.error('Failed to delete notification:', e); }
+  };
+
   const getNotificationText = (n: Notification) => {
     switch (n.type) {
       case 'like': return (<><span className="font-semibold">@{n.fromUsername}</span> liked your post {n.postTitle && <span className="italic">&ldquo;{n.postTitle}&rdquo;</span>}</>);
@@ -152,6 +171,9 @@ export default function NotificationBell() {
                 {unreadCount > 0 && (
                   <button onClick={markAllAsRead} className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none">Mark all read</button>
                 )}
+                {notifications.length > 0 && (
+                  <button onClick={clearAll} className="text-sm text-red-600 dark:text-red-400 hover:underline focus:outline-none">Clear all</button>
+                )}
                 {isMobile && (
                   <button onClick={() => setIsOpen(false)} aria-label="Close notifications" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none">✕</button>
                 )}
@@ -165,30 +187,45 @@ export default function NotificationBell() {
               ) : (
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {notifications.map(n => (
-                    <Link
+                    <motion.div
                       key={n.id}
-                      href={n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#'}
-                      onClick={() => { if (!n.read) markAsRead(n.id); setIsOpen(false); }}
-                      className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
+                      drag="x"
+                      dragConstraints={{ left: 0, right: 0 }}
+                      dragElastic={0.2}
+                      onDragEnd={(e, info) => {
+                        if (info.offset.x > 100) {
+                          deleteNotification(n.id);
+                        }
+                      }}
+                      className="relative"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0">
-                          {n.fromUserAvatar ? (
-                            <img src={n.fromUserAvatar} alt={n.fromUsername} className="w-10 h-10 rounded-full" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">{n.fromUsername.charAt(0).toUpperCase()}</div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="text-sm text-gray-900 dark:text-gray-100">{getNotificationText(n)}</div>
-                            <span className="text-2xl flex-shrink-0">{getNotificationIcon(n.type)}</span>
+                      <Link
+                        href={n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#'}
+                        onClick={() => { if (!n.read) markAsRead(n.id); setIsOpen(false); }}
+                        className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0">
+                            {n.fromUserAvatar ? (
+                              <img src={n.fromUserAvatar} alt={n.fromUsername} className="w-10 h-10 rounded-full" />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">{n.fromUsername.charAt(0).toUpperCase()}</div>
+                            )}
                           </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{getTimeAgo(n.createdAt)}</p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="text-sm text-gray-900 dark:text-gray-100">{getNotificationText(n)}</div>
+                              <span className="text-2xl flex-shrink-0">{getNotificationIcon(n.type)}</span>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{getTimeAgo(n.createdAt)}</p>
+                          </div>
+                          {!n.read && <div className="w-2 h-2 bg-indigo-600 rounded-full flex-shrink-0 mt-2" />}
                         </div>
-                        {!n.read && <div className="w-2 h-2 bg-indigo-600 rounded-full flex-shrink-0 mt-2" />}
+                      </Link>
+                      <div className="absolute right-0 top-0 bottom-0 flex items-center pr-4 pointer-events-none text-red-500 opacity-0 group-hover:opacity-100">
+                        <span className="text-sm">Swipe →</span>
                       </div>
-                    </Link>
+                    </motion.div>
                   ))}
                 </div>
               )}

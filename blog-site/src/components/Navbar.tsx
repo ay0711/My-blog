@@ -33,6 +33,16 @@ export default function Navbar() {
   return (
     <motion.nav initial={{ y: -100 }} animate={{ y: 0 }} className="bg-white/90 backdrop-blur dark:bg-[#0f1430]/90 shadow-md sticky top-0 z-50 border-b border-indigo-100 dark:border-[#1b2150]">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        {/* Mobile hamburger on left */}
+        <button
+          aria-label="Toggle navigation"
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+          className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          {open ? <FiX size={22} /> : <FiMenu size={22} />}
+        </button>
+
         <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
 
         {/* Desktop links */}
@@ -45,41 +55,51 @@ export default function Navbar() {
           <AuthMenu />
         </div>
 
-        {/* Mobile menu button */}
-        <button
-          aria-label="Toggle navigation"
-          aria-expanded={open}
-          onClick={() => setOpen(!open)}
-      className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          {open ? <FiX size={22} /> : <FiMenu size={22} />}
-        </button>
+        {/* Mobile right side icons */}
+        <div className="md:hidden flex items-center gap-2">
+          <NotificationBell />
+        </div>
       </div>
 
-      {/* Mobile dropdown */}
+      {/* Mobile side drawer (X-style) */}
       <AnimatePresence>
         {open && (
-          <motion.div
-            key="mobile-menu"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="md:hidden border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900"
-          >
-            <div className="px-4 py-3 flex flex-col gap-3">
-              <NavLinks onClick={() => setOpen(false)} />
-              {/* Mobile Notification Bell */}
-              <div className="pt-2 flex items-center">
-                <NotificationBell />
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setOpen(false)}
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            />
+            {/* Drawer */}
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed left-0 top-0 bottom-0 w-72 bg-white dark:bg-gray-900 z-50 shadow-2xl overflow-y-auto md:hidden"
+            >
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-6">
+                  <Link href="/" onClick={() => setOpen(false)} className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
+                  <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <FiX size={20} />
+                  </button>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <NavLinks onClick={() => setOpen(false)} />
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+                    <DarkModeToggle />
+                  </div>
+                  <div className="pt-2">
+                    <AuthMenu mobile />
+                  </div>
+                </div>
               </div>
-              <div className="pt-2">
-                <DarkModeToggle />
-              </div>
-              <div className="pt-2">
-                <AuthMenu mobile />
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </motion.nav>

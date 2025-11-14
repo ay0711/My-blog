@@ -985,6 +985,42 @@ app.post('/api/notifications/read-all', async (req, res) => {
   }
 });
 
+// DELETE /api/notifications/:id - Delete a single notification
+app.delete('/api/notifications/:id', async (req, res) => {
+  try {
+    const user = await getUserFromReq(req);
+    if (!user) return res.status(401).json({ message: 'Not authenticated' });
+
+    if (!mongoConnected) {
+      return res.json({ success: true });
+    }
+
+    await Notification.deleteOne({ id: req.params.id, userId: user.uid });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Delete notification error:', err);
+    res.status(500).json({ message: 'Failed to delete notification' });
+  }
+});
+
+// DELETE /api/notifications - Clear all notifications
+app.delete('/api/notifications', async (req, res) => {
+  try {
+    const user = await getUserFromReq(req);
+    if (!user) return res.status(401).json({ message: 'Not authenticated' });
+
+    if (!mongoConnected) {
+      return res.json({ success: true });
+    }
+
+    await Notification.deleteMany({ userId: user.uid });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Clear all notifications error:', err);
+    res.status(500).json({ message: 'Failed to clear notifications' });
+  }
+});
+
 // POST /api/posts/:id/comments
 app.post('/api/posts/:id/comments', async (req, res) => {
   const { author, content, parentId } = req.body;
