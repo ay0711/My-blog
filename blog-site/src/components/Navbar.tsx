@@ -17,20 +17,20 @@ export default function Navbar() {
 
   const NavLinks = ({ onClick, mobile }: { onClick?: () => void; mobile?: boolean }) => (
     <>
-      <Link href="/" ref={mobile ? firstLinkRef : undefined} className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname === '/' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiHome /> <span>Home</span>
+      <Link href="/" ref={mobile ? firstLinkRef : undefined} className={`flex items-center gap-3 ${mobile ? 'py-3.5 px-3 text-base rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800' : ''} ${pathname === '/' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
+        <FiHome className="w-5 h-5" /> <span>Home</span>
       </Link>
-      <Link href="/explore" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname.startsWith('/explore') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiTrendingUp /> <span>Explore</span>
+      <Link href="/explore" className={`flex items-center gap-3 ${mobile ? 'py-3.5 px-3 text-base rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800' : ''} ${pathname.startsWith('/explore') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
+        <FiTrendingUp className="w-5 h-5" /> <span>Explore</span>
       </Link>
-      <Link href="/create" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname.startsWith('/create') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiPlusCircle /> <span>Create</span>
+      <Link href="/create" className={`flex items-center gap-3 ${mobile ? 'py-3.5 px-3 text-base rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800' : ''} ${pathname.startsWith('/create') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
+        <FiPlusCircle className="w-5 h-5" /> <span>Create</span>
       </Link>
-      <Link href="/news" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname.startsWith('/news') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiFileText /> <span>News</span>
+      <Link href="/news" className={`flex items-center gap-3 ${mobile ? 'py-3.5 px-3 text-base rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800' : ''} ${pathname.startsWith('/news') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
+        <FiFileText className="w-5 h-5" /> <span>News</span>
       </Link>
-      <Link href="/bookmarks" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname.startsWith('/bookmarks') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiBookmark /> <span>Bookmarks</span>
+      <Link href="/bookmarks" className={`flex items-center gap-3 ${mobile ? 'py-3.5 px-3 text-base rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800' : ''} ${pathname.startsWith('/bookmarks') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
+        <FiBookmark className="w-5 h-5" /> <span>Bookmarks</span>
       </Link>
     </>
   );
@@ -62,8 +62,8 @@ export default function Navbar() {
   }, [open]);
 
   return (
-    <motion.nav role="navigation" aria-label="Primary" initial={{ y: -100 }} animate={{ y: 0 }} className="bg-white/90 backdrop-blur dark:bg-[#0f1430]/90 shadow-md sticky top-0 z-50 border-b border-indigo-100 dark:border-[#1b2150] h-14">
-      <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+    <motion.nav role="navigation" aria-label="Primary" initial={{ y: -100 }} animate={{ y: 0 }} className="bg-white/90 backdrop-blur dark:bg-[#0f1430]/90 shadow-md sticky top-0 z-50 border-b border-indigo-100 dark:border-[#1b2150] h-16 sm:h-14">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 h-full flex items-center justify-between">
         {/* Mobile hamburger on left */}
         <button
           aria-label="Toggle navigation"
@@ -72,10 +72,10 @@ export default function Navbar() {
           onClick={() => setOpen(!open)}
           className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
-          {open ? <FiX size={22} /> : <FiMenu size={22} />}
+          {open ? <FiX size={24} /> : <FiMenu size={24} />}
         </button>
 
-        <Link href="/" className="text-[22px] font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
+        <Link href="/" className="text-lg sm:text-[22px] font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-4">
@@ -88,8 +88,9 @@ export default function Navbar() {
         </div>
 
         {/* Mobile right side icons */}
-        <div className="md:hidden flex items-center gap-2">
+        <div className="md:hidden flex items-center gap-1">
           <NotificationBell />
+          <DarkModeToggle />
         </div>
       </div>
 
@@ -114,23 +115,20 @@ export default function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="fixed inset-0 w-full sm:w-[320px] sm:h-[70vh] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
+              className="fixed top-0 left-0 bottom-0 w-[80%] max-w-[320px] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
             >
-              <div className="flex flex-col min-h-full p-6">
-                <div className="flex items-center justify-between mb-6 h-14">
-                  <Link href="/" onClick={() => setOpen(false)} className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
-                  <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100">
+              <div className="flex flex-col min-h-full p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-8 pt-2">
+                  <Link href="/" onClick={() => setOpen(false)} className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
+                  <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100 transition-colors" aria-label="Close menu">
                     <FiX size={24} />
                   </button>
                 </div>
                 <div className="flex-1 flex flex-col gap-6">
-                  <div className="flex flex-col gap-1">
+                  <nav className="flex flex-col gap-2">
                     <NavLinks onClick={() => setOpen(false)} mobile />
-                  </div>
-                  <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800">
-                    <DarkModeToggle />
-                  </div>
-                  <div className="pt-2">
+                  </nav>
+                  <div className="mt-auto pt-6 border-t border-gray-200 dark:border-gray-800 space-y-4">
                     <AuthMenu mobile />
                   </div>
                 </div>
