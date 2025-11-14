@@ -26,17 +26,26 @@ export async function fetchWithFallback(path: string, init?: RequestInit): Promi
             const mergedInit: RequestInit = { 
                 credentials: 'include', 
                 ...init,
-                // Add timeout to detect slow/inactive backend
-                signal: init?.signal || AbortSignal.timeout(15000) // 15 second timeout
+                // Increased timeout to 60 seconds for slow backend operations
+                signal: init?.signal || AbortSignal.timeout(60000) // 60 second timeout
             };
             const res = await fetch(`${base}${path}`, mergedInit);
+            
+            // Check if response is successful (2xx status codes)
             if (res.ok) return res;
-            lastErr = new Error(`HTTP ${res.status} from ${base}${path}`);
+            
+            // For non-ok responses, try to parse error message
+            try {
+                const errorData = await res.json();
+                lastErr = new Error(errorData.message || `HTTP ${res.status} from ${base}${path}`);
+            } catch {
+                lastErr = new Error(`HTTP ${res.status} from ${base}${path}`);
+            }
         } catch (e: unknown) {
             // Check if it's a timeout or network error
             if (e instanceof Error) {
                 if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-                    lastErr = new Error('Backend server is taking too long to respond. It might be waking up from sleep mode. Please try again in a moment.');
+                    lastErr = new Error('Request timed out after 60 seconds. The server might be overloaded. Please try again.');
                 } else if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
                     lastErr = new Error('Unable to connect to the server. Please check your internet connection or try again later.');
                 } else {
