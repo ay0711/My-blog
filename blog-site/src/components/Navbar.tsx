@@ -71,12 +71,12 @@ export default function Navbar() {
       </aside>
 
       {/* Mobile Top Navbar - Only visible below lg */}
-      <nav className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 z-50">
+      <nav className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 z-50 shadow-sm">
         <div className="flex items-center justify-between h-full px-4">
           <Link href="/" className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             ModernBlog
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <NotificationBell />
             <DarkModeToggle />
           </div>
@@ -84,61 +84,61 @@ export default function Navbar() {
       </nav>
 
       {/* Mobile Bottom Navigation Bar - Only visible below lg */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 z-50">
-        <div className="flex items-center justify-around h-full px-2">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)]">
+        <div className="flex items-center justify-around h-full px-3 pb-safe">
           <Link 
             href="/"
-            className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+            className={`flex flex-col items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition-all min-w-[64px] ${
               pathname === '/' 
-                ? 'text-indigo-600 dark:text-indigo-400' 
-                : 'text-gray-600 dark:text-gray-400'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50' 
+                : 'text-gray-600 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800'
             }`}
           >
             <FiHome className="w-6 h-6" />
-            <span className="text-xs font-medium">Home</span>
+            <span className="text-xs font-semibold">Home</span>
           </Link>
           
           <Link 
             href="/explore"
-            className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+            className={`flex flex-col items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition-all min-w-[64px] ${
               pathname.startsWith('/explore') 
-                ? 'text-indigo-600 dark:text-indigo-400' 
-                : 'text-gray-600 dark:text-gray-400'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50' 
+                : 'text-gray-600 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800'
             }`}
           >
             <FiTrendingUp className="w-6 h-6" />
-            <span className="text-xs font-medium">Explore</span>
+            <span className="text-xs font-semibold">Explore</span>
           </Link>
           
           <Link 
             href="/create"
-            className="flex items-center justify-center w-12 h-12 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition-colors"
+            className="flex items-center justify-center w-14 h-14 -mt-8 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30 active:scale-95 transition-all"
           >
-            <FiPlusCircle className="w-6 h-6" />
+            <FiPlusCircle className="w-7 h-7" />
           </Link>
           
           <Link 
             href="/news"
-            className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+            className={`flex flex-col items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition-all min-w-[64px] ${
               pathname.startsWith('/news') 
-                ? 'text-indigo-600 dark:text-indigo-400' 
-                : 'text-gray-600 dark:text-gray-400'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50' 
+                : 'text-gray-600 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800'
             }`}
           >
             <FiFileText className="w-6 h-6" />
-            <span className="text-xs font-medium">News</span>
+            <span className="text-xs font-semibold">News</span>
           </Link>
           
           <Link 
             href="/bookmarks"
-            className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+            className={`flex flex-col items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition-all min-w-[64px] ${
               pathname.startsWith('/bookmarks') 
-                ? 'text-indigo-600 dark:text-indigo-400' 
-                : 'text-gray-600 dark:text-gray-400'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50' 
+                : 'text-gray-600 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800'
             }`}
           >
             <FiBookmark className="w-6 h-6" />
-            <span className="text-xs font-medium">Saved</span>
+            <span className="text-xs font-semibold">Saved</span>
           </Link>
         </div>
       </nav>

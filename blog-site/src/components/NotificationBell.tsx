@@ -146,11 +146,11 @@ export default function NotificationBell() {
         aria-expanded={isOpen}
         aria-label="Notifications"
         onClick={() => setIsOpen(o => !o)}
-        className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
+        className="relative p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors active:scale-95"
       >
         <FiBell className="w-6 h-6" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 flex items-center justify-center text-[11px] font-bold text-white bg-indigo-600 rounded-full">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 px-1.5 flex items-center justify-center text-[11px] font-bold text-white bg-indigo-600 rounded-full shadow-md">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
@@ -176,18 +176,18 @@ export default function NotificationBell() {
               transition={{ duration: 0.15 }}
               className={
                 isMobile
-                  ? 'fixed inset-x-0 top-14 bottom-16 mx-auto max-w-lg z-[70] bg-white dark:bg-gray-900 shadow-2xl overflow-hidden lg:hidden'
-                  : 'absolute right-0 top-full mt-2 w-[400px] max-h-[600px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden'
+                  ? 'fixed inset-x-4 top-20 bottom-24 mx-auto max-w-md z-[70] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-800 lg:hidden'
+                  : 'absolute right-0 top-full mt-3 w-[420px] max-h-[600px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden'
               }
             >
               {/* Header */}
-              <div className="sticky top-0 z-10 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
+              <div className="sticky top-0 z-10 px-5 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Notifications</h2>
                   {isMobile && (
                     <button
                       onClick={() => setIsOpen(false)}
-                      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+                      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 active:scale-95 transition-all"
                       aria-label="Close"
                     >
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -197,19 +197,19 @@ export default function NotificationBell() {
                   )}
                 </div>
                 {(unreadCount > 0 || notifications.length > 0) && (
-                  <div className="flex gap-3 mt-3 text-sm">
+                  <div className="flex gap-4 mt-3 text-sm">
                     {unreadCount > 0 && (
                       <button
                         onClick={markAllAsRead}
-                        className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                        className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
                       >
-                        Mark all as read
+                        Mark all read
                       </button>
                     )}
                     {notifications.length > 0 && (
                       <button
                         onClick={clearAll}
-                        className="text-gray-600 dark:text-gray-400 hover:underline"
+                        className="text-gray-600 dark:text-gray-400 hover:underline font-medium"
                       >
                         Clear all
                       </button>
@@ -219,7 +219,7 @@ export default function NotificationBell() {
               </div>
 
               {/* Content */}
-              <div className="overflow-y-auto" style={{ maxHeight: isMobile ? 'calc(100vh - 14rem - 4rem)' : '550px' }}>
+              <div className="overflow-y-auto" style={{ maxHeight: isMobile ? 'calc(100vh - 20rem - 5rem)' : '540px' }}>
                 {loading ? (
                   <div className="p-4 space-y-4">
                     {[...Array(4)].map((_, i) => (
@@ -233,12 +233,12 @@ export default function NotificationBell() {
                     ))}
                   </div>
                 ) : notifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                    <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-                      <FiBell className="w-8 h-8 text-gray-400 dark:text-gray-600" />
+                  <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+                    <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+                      <FiBell className="w-10 h-10 text-gray-400 dark:text-gray-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">No notifications yet</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">When you get notifications, they&apos;ll show up here</p>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No notifications yet</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-[250px]">When you get notifications, they&apos;ll show up here</p>
                   </div>
                 ) : (
                   <div>
@@ -251,8 +251,8 @@ export default function NotificationBell() {
                           window.location.href = n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#';
                         }}
                         className={`
-                          relative flex gap-3 p-4 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0
-                          ${!n.read ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}
+                          relative flex gap-4 p-4 cursor-pointer transition-all border-b border-gray-100 dark:border-gray-800 last:border-b-0 active:bg-gray-100 dark:active:bg-gray-800
+                          ${!n.read ? 'bg-indigo-50/50 dark:bg-indigo-950/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}
                         `}
                       >
                         {/* Avatar */}
@@ -285,7 +285,7 @@ export default function NotificationBell() {
                             e.stopPropagation();
                             deleteNotification(n.id);
                           }}
-                          className="flex-shrink-0 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500 transition-colors"
+                          className="flex-shrink-0 p-2.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition-all active:scale-95"
                           aria-label="Delete notification"
                         >
                           <FiTrash2 className="w-4 h-4" />
@@ -293,7 +293,7 @@ export default function NotificationBell() {
 
                         {/* Unread indicator */}
                         {!n.read && (
-                          <div className="absolute top-1/2 -translate-y-1/2 left-2 w-2 h-2 rounded-full bg-indigo-600" />
+                          <div className="absolute top-1/2 -translate-y-1/2 left-2 w-2.5 h-2.5 rounded-full bg-indigo-600 shadow-sm" />
                         )}
                       </div>
                     ))}
