@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiBell } from 'react-icons/fi';
+import { FiBell, FiTrash2 } from 'react-icons/fi';
 import Link from 'next/link';
 import { fetchJSON } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -162,69 +162,89 @@ export default function NotificationBell() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: isMobile ? 8 : -8 }}
             className={isMobile
-              ? 'fixed inset-0 top-16 z-50 flex flex-col bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700'
-              : 'absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50'}
+              ? 'fixed inset-0 top-14 z-50 flex flex-col bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700'
+              : 'absolute right-0 mt-2 w-[420px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50'}
           >
-            <div className={isMobile ? 'px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-900/95' : 'flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700'}>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Notifications</h3>
-              <div className="flex items-center gap-2">
+            <div className={isMobile ? 'px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-900/95 sticky top-0 z-10' : 'flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 backdrop-blur sticky top-0'}>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">Notifications</h3>
+              <div className="flex items-center gap-3">
+                {unreadCount > 0 && (
+                  <button onClick={markAllAsRead} className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none">Mark all read</button>
+                )}
+                {notifications.length > 0 && (
+                  <button onClick={clearAll} className="text-xs font-medium text-red-600 dark:text-red-400 hover:underline focus:outline-none">Clear</button>
+                )}
                 {isMobile && (
-                  <button onClick={() => setIsOpen(false)} aria-label="Close notifications" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none p-2">✕</button>
+                  <button onClick={() => setIsOpen(false)} aria-label="Close" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none p-1 text-sm">✕</button>
                 )}
               </div>
             </div>
             <div className={isMobile ? 'flex-1 overflow-y-auto overscroll-contain' : 'max-h-[600px] overflow-y-auto'}>
               {loading ? (
-                <div className="flex items-center justify-center p-12"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
-              ) : notifications.length === 0 ? (
-                <div className="p-12 text-center text-gray-500 dark:text-gray-400"><FiBell className="w-16 h-16 mx-auto mb-4 opacity-30" /><p className="text-lg font-medium">No notifications yet</p><p className="text-sm mt-1">When someone interacts with your posts, you&apos;ll see it here.</p></div>
-              ) : (
-                <div>
-                  {notifications.map(n => (
-                    <div
-                      key={n.id}
-                      className={`relative border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition cursor-pointer ${!n.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : 'bg-white dark:bg-gray-900'}`}
-                      onClick={() => {
-                        if (!n.read) markAsRead(n.id);
-                        setIsOpen(false);
-                        window.location.href = n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#';
-                      }}
-                    >
-                      <div className="p-3 flex gap-3">
-                        <div className="flex-shrink-0 pt-1">
-                          {n.fromUserAvatar ? (
-                            <img src={n.fromUserAvatar} alt={n.fromUsername} className="w-10 h-10 rounded-full" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">{n.fromUsername.charAt(0).toUpperCase()}</div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="text-[15px] leading-5 text-gray-900 dark:text-gray-100">{getNotificationText(n)}</p>
-                              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">{getTimeAgo(n.createdAt)}</p>
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteNotification(n.id);
-                              }}
-                              className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition"
-                              aria-label="Delete notification"
-                              title="Delete"
-                            >
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M16 6v12a2 2 0 01-2 2H10a2 2 0 01-2-2V6m4 0V4m0 0h2m-2 0H10m8 2h2M4 6h2"></path>
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10v6m6-6v6"></path>
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
+                <div className="p-6 space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="animate-pulse flex gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700" />
+                      <div className="flex-1 space-y-2 pt-1">
+                        <div className="h-3 w-1/2 rounded bg-gray-200 dark:bg-gray-700" />
+                        <div className="h-3 w-1/3 rounded bg-gray-200 dark:bg-gray-700" />
                       </div>
-                      {!n.read && <div className="absolute top-4 right-3 w-2 h-2 bg-blue-500 rounded-full" />}
                     </div>
                   ))}
                 </div>
+              ) : notifications.length === 0 ? (
+                <div className="p-10 text-center text-gray-500 dark:text-gray-400">
+                  <FiBell className="w-14 h-14 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No notifications yet</p>
+                  <p className="text-xs mt-1">Activity on your posts will appear here.</p>
+                </div>
+              ) : (
+                <ul role="list" className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {notifications.map(n => (
+                    <li
+                      key={n.id}
+                      role="listitem"
+                      className={`group relative px-4 py-3 flex gap-3 transition ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'bg-white dark:bg-gray-900'} hover:bg-gray-50 dark:hover:bg-gray-800/50`}
+                    >
+                      <button
+                        onClick={() => {
+                          if (!n.read) markAsRead(n.id);
+                          setIsOpen(false);
+                          window.location.href = n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#';
+                        }}
+                        className="absolute inset-0"
+                        aria-label="Open notification"
+                      />
+                      <div className="relative z-10 flex-shrink-0">
+                        {n.fromUserAvatar ? (
+                          <img src={n.fromUserAvatar} alt={n.fromUsername} className="w-11 h-11 rounded-full object-cover ring-1 ring-gray-200 dark:ring-gray-700" />
+                        ) : (
+                          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">{n.fromUsername.charAt(0).toUpperCase()}</div>
+                        )}
+                        {!n.read && <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-indigo-500 rounded-full ring-2 ring-white dark:ring-gray-900" />}
+                      </div>
+                      <div className="relative z-10 flex-1 min-w-0 flex flex-col">
+                        <div className="text-sm leading-5 text-gray-800 dark:text-gray-100">
+                          {getNotificationText(n)}
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                          <span>{getTimeAgo(n.createdAt)}</span>
+                          <span className="select-none">•</span>
+                          <span className="text-xs text-gray-400">{getNotificationIcon(n.type)}</span>
+                        </div>
+                      </div>
+                      <div className="relative z-10 flex-shrink-0 self-start">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
+                          aria-label="Delete notification"
+                          className="p-2 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           </motion.div>

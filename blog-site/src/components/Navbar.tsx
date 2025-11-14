@@ -62,8 +62,8 @@ export default function Navbar() {
   }, [open]);
 
   return (
-    <motion.nav initial={{ y: -100 }} animate={{ y: 0 }} className="bg-white/90 backdrop-blur dark:bg-[#0f1430]/90 shadow-md sticky top-0 z-50 border-b border-indigo-100 dark:border-[#1b2150]">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+    <motion.nav initial={{ y: -100 }} animate={{ y: 0 }} className="bg-white/90 backdrop-blur dark:bg-[#0f1430]/90 shadow-md sticky top-0 z-50 border-b border-indigo-100 dark:border-[#1b2150] h-14">
+      <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
         {/* Mobile hamburger on left */}
         <button
           aria-label="Toggle navigation"
@@ -117,7 +117,7 @@ export default function Navbar() {
               className="fixed inset-0 w-full sm:w-[320px] sm:h-[70vh] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
             >
               <div className="flex flex-col min-h-full p-6">
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-6 h-14">
                   <Link href="/" onClick={() => setOpen(false)} className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
                   <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100">
                     <FiX size={24} />
