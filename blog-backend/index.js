@@ -925,13 +925,11 @@ app.get('/api/notifications', async (req, res) => {
       return res.json({ notifications: [] }); // Fallback for file-based storage
     }
 
-    console.log(`📥 Fetching notifications for user ${user.uid}`);
     const notifications = await Notification.find({ userId: user.uid })
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();
 
-    console.log(`✅ Found ${notifications.length} notifications for user ${user.uid}`);
     const unreadCount = await Notification.countDocuments({ userId: user.uid, read: false });
 
     return res.json({ notifications, unreadCount });

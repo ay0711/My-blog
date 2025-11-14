@@ -179,6 +179,11 @@ export default function NotificationBell() {
                 )}
               </div>
             </div>
+            {notifications.length > 0 && (
+              <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 border-b border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-600 dark:text-gray-400 text-center">💡 Swipe right to delete a notification</p>
+              </div>
+            )}
             <div className={isMobile ? 'flex-1 overflow-y-auto overscroll-contain' : 'max-h-96 overflow-y-auto'}>
               {loading ? (
                 <div className="flex items-center justify-center p-8"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
@@ -191,18 +196,27 @@ export default function NotificationBell() {
                       key={n.id}
                       drag="x"
                       dragConstraints={{ left: 0, right: 0 }}
-                      dragElastic={0.2}
+                      dragElastic={0.3}
                       onDragEnd={(e, info) => {
                         if (info.offset.x > 100) {
                           deleteNotification(n.id);
                         }
                       }}
-                      className="relative"
+                      whileDrag={{ scale: 1.02, backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
+                      className="relative bg-white dark:bg-gray-900"
                     >
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-red-500">
+                        <span className="text-sm font-medium">🗑️ Delete</span>
+                      </div>
                       <Link
                         href={n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#'}
-                        onClick={() => { if (!n.read) markAsRead(n.id); setIsOpen(false); }}
-                        className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
+                        onClick={(e) => { 
+                          e.preventDefault();
+                          if (!n.read) markAsRead(n.id); 
+                          setIsOpen(false);
+                          window.location.href = n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#';
+                        }}
+                        className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 relative ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0">
@@ -222,9 +236,6 @@ export default function NotificationBell() {
                           {!n.read && <div className="w-2 h-2 bg-indigo-600 rounded-full flex-shrink-0 mt-2" />}
                         </div>
                       </Link>
-                      <div className="absolute right-0 top-0 bottom-0 flex items-center pr-4 pointer-events-none text-red-500 opacity-0 group-hover:opacity-100">
-                        <span className="text-sm">Swipe →</span>
-                      </div>
                     </motion.div>
                   ))}
                 </div>
