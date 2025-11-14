@@ -1990,7 +1990,9 @@ app.post('/api/users/follow/:username', async (req, res) => {
         );
         
         // Create notification to target user
-        await createNotification('follow', targetUser.uid, user);
+        console.log(`📬 Creating follow notification for user ${targetUser.uid} from ${user.username}`);
+        const notification = await createNotification('follow', targetUser.uid, user);
+        console.log(`✅ Notification created:`, notification ? 'Success' : 'Failed');
         
         // Send email notification if email is configured and user has email notifications enabled
         const emailSettings = targetUser.notificationSettings?.emailNotifications;
@@ -2001,6 +2003,7 @@ app.post('/api/users/follow/:username', async (req, res) => {
         
         if (shouldSendEmail) {
           try {
+            console.log(`📧 Sending follow email to ${targetUser.email}`);
             await mailTransporter.sendMail({
               from: EMAIL_FROM,
               to: targetUser.email,
@@ -2025,9 +2028,12 @@ app.post('/api/users/follow/:username', async (req, res) => {
                 </div>
               `
             });
+            console.log(`✅ Follow email sent successfully to ${targetUser.email}`);
           } catch (emailErr) {
             console.error('Failed to send follow email:', emailErr);
           }
+        } else {
+          console.log(`⏭️  Skipping email: mailTransporter=${!!mailTransporter}, email=${!!targetUser.email}, enabled=${emailSettings?.enabled}, follows=${emailSettings?.follows}`);
         }
       }
       
