@@ -114,7 +114,7 @@ export default function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="fixed inset-0 w-full sm:w-[320px] sm:h-[100vh] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
+              className="fixed inset-0 w-full sm:w-[320px] sm:h-[70vh] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
             >
               <div className="flex flex-col min-h-full p-6">
                 <div className="flex items-center justify-between mb-8">

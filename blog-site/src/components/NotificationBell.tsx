@@ -166,72 +166,62 @@ export default function NotificationBell() {
               : 'absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50'}
           >
             <div className={isMobile ? 'px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-900/95' : 'flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700'}>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Notifications</h3>
-              <div className="flex items-center gap-3">
-                {unreadCount > 0 && (
-                  <button onClick={markAllAsRead} className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none">Mark all read</button>
-                )}
-                {notifications.length > 0 && (
-                  <button onClick={clearAll} className="text-sm text-red-600 dark:text-red-400 hover:underline focus:outline-none">Clear all</button>
-                )}
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Notifications</h3>
+              <div className="flex items-center gap-2">
                 {isMobile && (
-                  <button onClick={() => setIsOpen(false)} aria-label="Close notifications" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none">✕</button>
+                  <button onClick={() => setIsOpen(false)} aria-label="Close notifications" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none p-2">✕</button>
                 )}
               </div>
             </div>
-            <div className={isMobile ? 'flex-1 overflow-y-auto overscroll-contain' : 'max-h-96 overflow-y-auto'}>
+            <div className={isMobile ? 'flex-1 overflow-y-auto overscroll-contain' : 'max-h-[600px] overflow-y-auto'}>
               {loading ? (
-                <div className="flex items-center justify-center p-8"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
+                <div className="flex items-center justify-center p-12"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
               ) : notifications.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400"><FiBell className="w-12 h-12 mx-auto mb-3 opacity-50" /><p>No notifications yet</p></div>
+                <div className="p-12 text-center text-gray-500 dark:text-gray-400"><FiBell className="w-16 h-16 mx-auto mb-4 opacity-30" /><p className="text-lg font-medium">No notifications yet</p><p className="text-sm mt-1">When someone interacts with your posts, you'll see it here.</p></div>
               ) : (
-                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                <div>
                   {notifications.map(n => (
                     <div
                       key={n.id}
-                      className="relative bg-white dark:bg-gray-900 group"
+                      className={`relative border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition cursor-pointer ${!n.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : 'bg-white dark:bg-gray-900'}`}
+                      onClick={() => {
+                        if (!n.read) markAsRead(n.id);
+                        setIsOpen(false);
+                        window.location.href = n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#';
+                      }}
                     >
-                      <div
-                        onClick={() => {
-                          if (!n.read) markAsRead(n.id);
-                          setIsOpen(false);
-                          window.location.href = n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#';
-                        }}
-                        className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition focus:outline-none cursor-pointer relative ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0">
-                            {n.fromUserAvatar ? (
-                              <img src={n.fromUserAvatar} alt={n.fromUsername} className="w-10 h-10 rounded-full" />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">{n.fromUsername.charAt(0).toUpperCase()}</div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="text-sm text-gray-900 dark:text-gray-100">{getNotificationText(n)}</div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <span className="text-2xl">{getNotificationIcon(n.type)}</span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteNotification(n.id);
-                                  }}
-                                  className="p-2 rounded-full bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-sm"
-                                  aria-label="Delete notification"
-                                  title="Delete"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                              </div>
+                      <div className="p-3 flex gap-3">
+                        <div className="flex-shrink-0 pt-1">
+                          {n.fromUserAvatar ? (
+                            <img src={n.fromUserAvatar} alt={n.fromUsername} className="w-10 h-10 rounded-full" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">{n.fromUsername.charAt(0).toUpperCase()}</div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-[15px] leading-5 text-gray-900 dark:text-gray-100">{getNotificationText(n)}</p>
+                              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">{getTimeAgo(n.createdAt)}</p>
                             </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{getTimeAgo(n.createdAt)}</p>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteNotification(n.id);
+                              }}
+                              className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition"
+                              aria-label="Delete notification"
+                              title="Delete"
+                            >
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M16 6v12a2 2 0 01-2 2H10a2 2 0 01-2-2V6m4 0V4m0 0h2m-2 0H10m8 2h2M4 6h2"></path>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10v6m6-6v6"></path>
+                              </svg>
+                            </button>
                           </div>
-                          {!n.read && <div className="w-2 h-2 bg-indigo-600 rounded-full flex-shrink-0 mt-2" />}
                         </div>
                       </div>
+                      {!n.read && <div className="absolute top-4 right-3 w-2 h-2 bg-blue-500 rounded-full" />}
                     </div>
                   ))}
                 </div>
