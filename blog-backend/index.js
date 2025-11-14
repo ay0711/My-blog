@@ -9,6 +9,7 @@ require('dotenv').config();
 const Post = require('./models/Post');
 const User = require('./models/User');
 const Notification = require('./models/Notification');
+// Trigger redeploy - v1.0.1
 const app = express();
 const PORT = process.env.PORT || 5555;
 const postsFilePath = path.join(__dirname, 'posts.json');
