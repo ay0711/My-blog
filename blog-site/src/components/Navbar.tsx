@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiHome, FiPlusCircle, FiFileText, FiMenu, FiX, FiBookmark, FiTrendingUp } from 'react-icons/fi';
 import DarkModeToggle from './DarkModeToggle';
@@ -9,28 +10,40 @@ import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const firstLinkRef = useRef<HTMLAnchorElement>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   const NavLinks = ({ onClick, mobile }: { onClick?: () => void; mobile?: boolean }) => (
     <>
-      <Link href="/" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
+      <Link href="/" ref={mobile ? firstLinkRef : undefined} className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname === '/' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
         <FiHome /> <span>Home</span>
       </Link>
-      <Link href="/explore" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
+      <Link href="/explore" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname.startsWith('/explore') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
         <FiTrendingUp /> <span>Explore</span>
       </Link>
-      <Link href="/create" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
+      <Link href="/create" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname.startsWith('/create') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
         <FiPlusCircle /> <span>Create</span>
       </Link>
-      <Link href="/news" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
+      <Link href="/news" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname.startsWith('/news') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
         <FiFileText /> <span>News</span>
       </Link>
-      <Link href="/bookmarks" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
+      <Link href="/bookmarks" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname.startsWith('/bookmarks') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
         <FiBookmark /> <span>Bookmarks</span>
       </Link>
     </>
   );
 
   // Lock body scroll and handle Escape to close when drawer is open
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => setReducedMotion(mq.matches);
+    apply();
+    mq.addEventListener?.('change', apply);
+    return () => mq.removeEventListener?.('change', apply);
+  }, []);
+
   useEffect(() => {
     if (open) {
       const original = document.body.style.overflow;
@@ -39,6 +52,8 @@ export default function Navbar() {
         if (e.key === 'Escape') setOpen(false);
       };
       window.addEventListener('keydown', onKey);
+      // focus first link
+      setTimeout(() => firstLinkRef.current?.focus(), 0);
       return () => {
         document.body.style.overflow = original;
         window.removeEventListener('keydown', onKey);
@@ -53,6 +68,7 @@ export default function Navbar() {
         <button
           aria-label="Toggle navigation"
           aria-expanded={open}
+          ref={menuButtonRef}
           onClick={() => setOpen(!open)}
           className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
@@ -87,17 +103,21 @@ export default function Navbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setOpen(false)}
-              className="fixed inset-0 bg-black/50 z-[100] md:hidden"
+              className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[100] md:hidden"
             />
             {/* Drawer */}
             <motion.div
               role="dialog"
               aria-modal="true"
               aria-label="Navigation menu"
+              drag="x"
+              dragConstraints={{ left: -120, right: 0 }}
+              dragElastic={0.05}
+              onDragEnd={(e, info) => { if (info.offset.x < -60) setOpen(false); }}
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              transition={reducedMotion ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 300 }}
               className="fixed left-0 top-0 bottom-0 w-[85vw] max-w-[360px] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
             >
               <div className="flex flex-col h-full p-6">
