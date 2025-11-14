@@ -14,6 +14,7 @@ export default function Navbar() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [edgeSwipeStart, setEdgeSwipeStart] = useState<number | null>(null);
 
   const NavLinks = ({ onClick, mobile }: { onClick?: () => void; mobile?: boolean }) => (
     <>
@@ -60,6 +61,35 @@ export default function Navbar() {
       };
     }
   }, [open]);
+
+  // Edge swipe to open (from left edge on mobile)
+  useEffect(() => {
+    const onTouchStart = (e: TouchEvent) => {
+      if (open || window.innerWidth >= 768) return;
+      const touch = e.touches[0];
+      if (touch.clientX < 20) {
+        setEdgeSwipeStart(touch.clientX);
+      }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (edgeSwipeStart === null) return;
+      const touch = e.touches[0];
+      if (touch.clientX - edgeSwipeStart > 60) {
+        setOpen(true);
+        setEdgeSwipeStart(null);
+      }
+    };
+    const onTouchEnd = () => setEdgeSwipeStart(null);
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [open, edgeSwipeStart]);
 
   return (
     <motion.nav initial={{ y: -100 }} animate={{ y: 0 }} className="bg-white/90 backdrop-blur dark:bg-[#0f1430]/90 shadow-md sticky top-0 z-50 border-b border-indigo-100 dark:border-[#1b2150]">
