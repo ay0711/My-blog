@@ -204,19 +204,19 @@ export default function NotificationBell() {
                       }}
                       whileDrag={{ scale: 1.02, backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
                       className="relative bg-white dark:bg-gray-900"
+                      style={{ touchAction: 'pan-x' }}
                     >
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-red-500">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-red-500 opacity-0 transition-opacity duration-200" style={{ pointerEvents: 'none' }}>
                         <span className="text-sm font-medium">🗑️ Delete</span>
                       </div>
-                      <Link
-                        href={n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#'}
-                        onClick={(e) => { 
-                          e.preventDefault();
-                          if (!n.read) markAsRead(n.id); 
+                      <div
+                        onClick={() => {
+                          if (!n.read) markAsRead(n.id);
                           setIsOpen(false);
                           window.location.href = n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#';
                         }}
-                        className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 relative ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
+                        className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition focus:outline-none cursor-pointer relative ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
+                        style={{ userSelect: 'none' }}
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0">
@@ -235,7 +235,7 @@ export default function NotificationBell() {
                           </div>
                           {!n.read && <div className="w-2 h-2 bg-indigo-600 rounded-full flex-shrink-0 mt-2" />}
                         </div>
-                      </Link>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
