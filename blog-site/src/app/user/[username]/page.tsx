@@ -96,7 +96,13 @@ export default function UserProfilePage() {
     }
   }, [username, currentUser]);
 
-  const handleFollow = async () => {
+  const handleFollow = async (e?: React.MouseEvent) => {
+    // Prevent any default behavior or form submission
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (!currentUser) {
       router.push('/sign-in');
       return;
@@ -342,6 +348,7 @@ export default function UserProfilePage() {
               {/* Follow Button */}
               {!isOwnProfile && currentUser && (
                 <button
+                  type="button"
                   onClick={handleFollow}
                   disabled={followLoading}
                   className={`flex items-center gap-2 px-6 py-2 rounded-full font-medium transition-all ${

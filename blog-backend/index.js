@@ -109,7 +109,7 @@ const fetchFromNewsAPI = (url) => {
       resp.on('data', (chunk) => (data += chunk));
       resp.on('end', () => {
         const status = resp.statusCode || 0;
-  /* log removed */
+        /* log removed */
         try {
           const json = JSON.parse(data);
           if (status >= 400) {
@@ -129,12 +129,12 @@ const fetchFromNewsAPI = (url) => {
 
 // Extract tags from article
 const extractTags = (article) => {
-  const stopwords = ['the','and','for','with','that','this','from','have','will','your','about'];
+  const stopwords = ['the', 'and', 'for', 'with', 'that', 'this', 'from', 'have', 'will', 'your', 'about'];
   const text = ((article.title || '') + ' ' + (article.description || '')).toLowerCase();
   const words = text.split(/[^a-z0-9]+/).filter(w => w.length > 3 && !stopwords.includes(w));
   const freq = {};
   words.forEach(w => freq[w] = (freq[w] || 0) + 1);
-  const top = Object.keys(freq).sort((a,b) => freq[b] - freq[a]).slice(0, 3);
+  const top = Object.keys(freq).sort((a, b) => freq[b] - freq[a]).slice(0, 3);
   if (article.source?.name) {
     top.unshift(article.source.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
   }
@@ -144,37 +144,37 @@ const extractTags = (article) => {
 // Auto-import news function
 const autoImportNews = async () => {
   if (!NEWSAPI_KEY || !mongoConnected) {
-  /* log removed */
+    /* log removed */
     return { skipped: true, reason: 'missing_key_or_db' };
   }
 
   const categories = ['technology', 'business', 'science', 'health', 'sports'];
   /* log removed */
-  
+
   try {
     const summary = { totalImported: 0, perCategory: {} };
     for (const category of categories) {
-      const params = new URLSearchParams({ 
+      const params = new URLSearchParams({
         apiKey: NEWSAPI_KEY,
         category,
         country: 'us',
         pageSize: '5' // Import 5 latest articles per category
       });
-      
+
       const url = `https://newsapi.org/v2/top-headlines?${params}`;
       const data = await fetchFromNewsAPI(url);
       const articles = data.articles || [];
-      
-  let imported = 0;
+
+      let imported = 0;
       for (const a of articles) {
         const exists = a.url ? await Post.findOne({ sourceUrl: a.url }) : null;
         if (exists) continue;
-        
+
         const extractedTags = extractTags(a);
         const allTags = [category, ...extractedTags];
         // Remove duplicates (case-insensitive)
         const uniqueTags = [...new Set(allTags.map(t => t.toLowerCase()))];
-        
+
         await Post.create({
           id: randomUUID(),
           title: a.title || 'Untitled',
@@ -182,7 +182,7 @@ const autoImportNews = async () => {
           author: a.author || a.source?.name || 'News',
           createdAt: a.publishedAt ? new Date(a.publishedAt) : new Date(),
           likes: 0,
-          reactions: { like:0, love:0, laugh:0, wow:0, sad:0, angry:0 },
+          reactions: { like: 0, love: 0, laugh: 0, wow: 0, sad: 0, angry: 0 },
           comments: [],
           sourceUrl: a.url,
           tags: uniqueTags,
@@ -190,12 +190,12 @@ const autoImportNews = async () => {
         });
         imported++;
       }
-      
+
       /* log removed: per-category imported count */
       summary.perCategory[category] = imported;
       summary.totalImported += imported;
     }
-  /* log removed */
+    /* log removed */
     return summary;
   } catch (error) {
     console.error('❌ Auto-import failed:', error.message);
@@ -223,8 +223,8 @@ if (MONGO_URI) {
   mongoose.connect(MONGO_URI)
     .then(async () => {
       mongoConnected = true;
-  /* log removed */
-      
+      /* log removed */
+
       // Auto-migrate posts.json if DB empty
       const count = await Post.countDocuments();
       if (count === 0 && fs.existsSync(postsFilePath)) {
@@ -246,9 +246,9 @@ if (MONGO_URI) {
             });
           }
         }
-  /* log removed */
+        /* log removed */
       }
-      
+
       // Start auto-import if enabled and not running in a serverless environment (Vercel)
       if (AUTO_IMPORT_ENABLED && NEWSAPI_KEY && !IS_SERVERLESS) {
         startAutoImport();
@@ -297,7 +297,7 @@ app.get('/api/posts', async (req, res) => {
     const tags = tagsParam ? tagsParam.split(',').map(t => t.trim()).filter(Boolean) : [];
     if (singleTag) tags.push(singleTag);
 
-  const sort = sortKey === 'popular' ? { isPinned: -1, likes: -1, createdAt: -1 } : { isPinned: -1, createdAt: -1 };
+    const sort = sortKey === 'popular' ? { isPinned: -1, likes: -1, createdAt: -1 } : { isPinned: -1, createdAt: -1 };
 
     if (mongoConnected) {
       const filter = {};
@@ -312,7 +312,7 @@ app.get('/api/posts', async (req, res) => {
         }
         if (endDateStr) {
           const ed = new Date(endDateStr);
-          if (!isNaN(ed.getTime())) { ed.setHours(23,59,59,999); createdAt.$lte = ed; }
+          if (!isNaN(ed.getTime())) { ed.setHours(23, 59, 59, 999); createdAt.$lte = ed; }
         }
         if (Object.keys(createdAt).length) filter.createdAt = createdAt;
       }
@@ -343,7 +343,7 @@ app.get('/api/posts', async (req, res) => {
         if (sd && d < sd) return false;
         if (ed) {
           const edEnd = new Date(ed);
-          edEnd.setHours(23,59,59,999);
+          edEnd.setHours(23, 59, 59, 999);
           if (d > edEnd) return false;
         }
         return true;
@@ -400,7 +400,7 @@ app.get('/api/posts/:id', async (req, res) => {
       const post = await Post.findOne({ id: req.params.id }).lean();
       return post ? res.json(post) : res.status(404).json({ message: 'Not found' });
     }
-    
+
     const post = readPosts().find(p => p.id === req.params.id);
     post ? res.json(post) : res.status(404).json({ message: 'Not found' });
   } catch (err) {
@@ -415,10 +415,10 @@ app.post('/api/posts', async (req, res) => {
   if (!title || !content || !author) {
     return res.status(400).json({ message: 'Title, content, author required' });
   }
-  
+
   try {
     const fromUser = await getUserFromReq(req);
-    
+
     const doc = {
       id: randomUUID(),
       title,
@@ -428,7 +428,7 @@ app.post('/api/posts', async (req, res) => {
       authorId: fromUser?.uid,
       createdAt: new Date(),
       likes: 0,
-      reactions: { like:0, love:0, laugh:0, wow:0, sad:0, angry:0 },
+      reactions: { like: 0, love: 0, laugh: 0, wow: 0, sad: 0, angry: 0 },
       comments: [],
       tags: Array.isArray(tags) ? tags : [],
       featuredImage: featuredImage || null,
@@ -437,10 +437,10 @@ app.post('/api/posts', async (req, res) => {
       seriesId: seriesId || null,
       partNumber: partNumber === undefined || partNumber === null ? null : Number(partNumber),
     };
-    
+
     if (mongoConnected) {
       const created = await Post.create(doc);
-      
+
       // Notify mentioned users in title and content
       if (fromUser) {
         await notifyMentions({
@@ -450,10 +450,10 @@ app.post('/api/posts', async (req, res) => {
           postTitle: title
         });
       }
-      
+
       return res.status(201).json(created);
     }
-    
+
     const posts = readPosts();
     posts.push(doc);
     writePosts(posts);
@@ -470,7 +470,7 @@ app.put('/api/posts/:id', async (req, res) => {
   if (!title || !content) {
     return res.status(400).json({ message: 'Title and content required' });
   }
-  
+
   try {
     if (mongoConnected) {
       const patch = { title, content, tags: tags || [], featuredImage };
@@ -485,16 +485,16 @@ app.put('/api/posts/:id', async (req, res) => {
       ).lean();
       return updated ? res.json(updated) : res.status(404).json({ message: 'Not found' });
     }
-    
+
     const posts = readPosts();
     const idx = posts.findIndex(p => p.id === req.params.id);
     if (idx === -1) return res.status(404).json({ message: 'Not found' });
-    
-    posts[idx] = { 
-      ...posts[idx], 
-      title, 
-      content, 
-      tags: tags || posts[idx].tags, 
+
+    posts[idx] = {
+      ...posts[idx],
+      title,
+      content,
+      tags: tags || posts[idx].tags,
       featuredImage: featuredImage || posts[idx].featuredImage,
       isPinned: typeof isPinned === 'boolean' ? isPinned : (posts[idx].isPinned || false),
       pinnedUntil: pinnedUntil !== undefined ? (pinnedUntil ? new Date(pinnedUntil) : null) : (posts[idx].pinnedUntil || null),
@@ -516,7 +516,7 @@ app.delete('/api/posts/:id', async (req, res) => {
       const deleted = await Post.findOneAndDelete({ id: req.params.id });
       return deleted ? res.status(204).send() : res.status(404).json({ message: 'Not found' });
     }
-    
+
     const posts = readPosts();
     const filtered = posts.filter(p => p.id !== req.params.id);
     if (filtered.length === posts.length) return res.status(404).json({ message: 'Not found' });
@@ -537,19 +537,19 @@ app.post('/api/posts/:id/like', async (req, res) => {
     if (mongoConnected) {
       const updated = await Post.findOneAndUpdate({ id: req.params.id }, { $inc: { likes: 1 } }, { new: true }).lean();
       if (!updated) return res.status(404).json({ message: 'Not found' });
-      
+
       // Create notification if liker is not the post author
       if (updated.authorId && updated.authorId !== actor.uid) {
         await createNotification('like', updated.authorId, actor, updated.id, updated.title);
       }
-      
+
       return res.json(updated);
     }
-    
+
     const posts = readPosts();
     const idx = posts.findIndex(p => p.id === req.params.id);
     if (idx === -1) return res.status(404).json({ message: 'Not found' });
-    
+
     posts[idx].likes = (posts[idx].likes || 0) + 1;
     writePosts(posts);
     res.json(posts[idx]);
@@ -564,8 +564,8 @@ app.post('/api/posts/:id/unlike', async (req, res) => {
   try {
     if (mongoConnected) {
       const updated = await Post.findOneAndUpdate(
-        { id: req.params.id }, 
-        { $inc: { likes: -1 } }, 
+        { id: req.params.id },
+        { $inc: { likes: -1 } },
         { new: true }
       ).lean();
       if (!updated) return res.status(404).json({ message: 'Not found' });
@@ -576,11 +576,11 @@ app.post('/api/posts/:id/unlike', async (req, res) => {
       }
       return res.json(updated);
     }
-    
+
     const posts = readPosts();
     const idx = posts.findIndex(p => p.id === req.params.id);
     if (idx === -1) return res.status(404).json({ message: 'Not found' });
-    
+
     posts[idx].likes = Math.max(0, (posts[idx].likes || 0) - 1);
     writePosts(posts);
     res.json(posts[idx]);
@@ -595,44 +595,44 @@ app.post('/api/posts/:id/repost', async (req, res) => {
   try {
     const user = req.user;
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
-    
+
     const postId = req.params.id;
-    
+
     if (mongoConnected) {
       const originalPost = await Post.findOne({ id: postId });
       if (!originalPost) return res.status(404).json({ message: 'Post not found' });
-      
+
       // Check if user already reposted
       const alreadyReposted = originalPost.repostedBy && originalPost.repostedBy.includes(user.uid);
-      
+
       if (alreadyReposted) {
         // Undo repost
         await Post.updateOne(
           { id: postId },
-          { 
+          {
             $pull: { repostedBy: user.uid },
             $inc: { repostCount: -1 }
           }
         );
-        
+
         // Delete the repost from user's posts
-        await Post.deleteOne({ 
-          isRepost: true, 
+        await Post.deleteOne({
+          isRepost: true,
           originalPostId: postId,
-          author: user.name 
+          author: user.name
         });
-        
+
         return res.json({ reposted: false, message: 'Repost removed' });
       } else {
         // Add repost
         await Post.updateOne(
           { id: postId },
-          { 
+          {
             $addToSet: { repostedBy: user.uid },
             $inc: { repostCount: 1 }
           }
         );
-        
+
         // Create a repost entry
         const repost = await Post.create({
           id: crypto.randomUUID(),
@@ -649,44 +649,44 @@ app.post('/api/posts/:id/repost', async (req, res) => {
           comments: [],
           repostCount: 0
         });
-        
+
         // Create notification to original post author if reposter is not the author
         if (originalPost.authorId && originalPost.authorId !== user.uid) {
           await createNotification('repost', originalPost.authorId, user, originalPost.id, originalPost.title);
         }
-        
+
         return res.json({ reposted: true, repost: repost.toObject() });
       }
     } else {
       const posts = readPosts();
       const idx = posts.findIndex(p => p.id === postId);
       if (idx === -1) return res.status(404).json({ message: 'Post not found' });
-      
+
       const originalPost = posts[idx];
       if (!originalPost.repostedBy) originalPost.repostedBy = [];
-      
+
       const alreadyReposted = originalPost.repostedBy.includes(user.uid);
-      
+
       if (alreadyReposted) {
         // Undo repost
         originalPost.repostedBy = originalPost.repostedBy.filter(id => id !== user.uid);
         originalPost.repostCount = Math.max(0, (originalPost.repostCount || 0) - 1);
-        
+
         // Remove repost from posts array
-        const repostIdx = posts.findIndex(p => 
+        const repostIdx = posts.findIndex(p =>
           p.isRepost && p.originalPostId === postId && p.author === user.name
         );
         if (repostIdx !== -1) {
           posts.splice(repostIdx, 1);
         }
-        
+
         writePosts(posts);
         return res.json({ reposted: false, message: 'Repost removed' });
       } else {
         // Add repost
         originalPost.repostedBy.push(user.uid);
         originalPost.repostCount = (originalPost.repostCount || 0) + 1;
-        
+
         // Create repost
         const repost = {
           id: crypto.randomUUID(),
@@ -703,7 +703,7 @@ app.post('/api/posts/:id/repost', async (req, res) => {
           comments: [],
           repostCount: 0
         };
-        
+
         posts.unshift(repost);
         writePosts(posts);
         return res.json({ reposted: true, repost });
@@ -720,20 +720,20 @@ app.post('/api/posts/:id/bookmark', async (req, res) => {
   try {
     const user = req.user;
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
-    
+
     const postId = req.params.id;
-    
+
     if (mongoConnected) {
       const post = await Post.findOne({ id: postId });
       if (!post) return res.status(404).json({ message: 'Post not found' });
-      
+
       const alreadyBookmarked = post.bookmarkedBy && post.bookmarkedBy.includes(user.uid);
-      
+
       if (alreadyBookmarked) {
         // Remove bookmark
         await Post.updateOne(
           { id: postId },
-          { 
+          {
             $pull: { bookmarkedBy: user.uid },
             $inc: { bookmarkCount: -1 }
           }
@@ -743,7 +743,7 @@ app.post('/api/posts/:id/bookmark', async (req, res) => {
         // Add bookmark
         await Post.updateOne(
           { id: postId },
-          { 
+          {
             $addToSet: { bookmarkedBy: user.uid },
             $inc: { bookmarkCount: 1 }
           }
@@ -754,12 +754,12 @@ app.post('/api/posts/:id/bookmark', async (req, res) => {
       const posts = readPosts();
       const idx = posts.findIndex(p => p.id === postId);
       if (idx === -1) return res.status(404).json({ message: 'Post not found' });
-      
+
       const post = posts[idx];
       if (!post.bookmarkedBy) post.bookmarkedBy = [];
-      
+
       const alreadyBookmarked = post.bookmarkedBy.includes(user.uid);
-      
+
       if (alreadyBookmarked) {
         post.bookmarkedBy = post.bookmarkedBy.filter(id => id !== user.uid);
         post.bookmarkCount = Math.max(0, (post.bookmarkCount || 0) - 1);
@@ -783,7 +783,7 @@ app.get('/api/bookmarks', async (req, res) => {
   try {
     const user = req.user;
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
-    
+
     if (mongoConnected) {
       const posts = await Post.find({ bookmarkedBy: user.uid }).sort({ createdAt: -1 }).lean();
       return res.json({ posts });
@@ -801,7 +801,7 @@ app.get('/api/bookmarks', async (req, res) => {
 // Helper function to create notification
 async function createNotification(type, userId, fromUser, postId = null, postTitle = null, commentText = null) {
   if (!mongoConnected) return; // Only support notifications with MongoDB
-  
+
   try {
     const notification = await Notification.create({
       id: crypto.randomUUID(),
@@ -834,18 +834,18 @@ function extractMentions(text) {
 // Helper function to notify mentioned users
 async function notifyMentions({ textParts, fromUser, postId, postTitle }) {
   if (!mongoConnected || !textParts || textParts.length === 0) return;
-  
+
   const allText = textParts.join(' ');
   const mentionedUsernames = extractMentions(allText);
-  
+
   if (mentionedUsernames.length === 0) return;
-  
+
   try {
     // Find all mentioned users
-    const mentionedUsers = await User.find({ 
-      username: { $in: mentionedUsernames } 
+    const mentionedUsers = await User.find({
+      username: { $in: mentionedUsernames }
     }).select('uid username').lean();
-    
+
     // Create mention notifications for each user (except the author)
     for (const user of mentionedUsers) {
       if (user.uid !== fromUser.uid) {
@@ -862,18 +862,20 @@ app.get('/api/notifications', async (req, res) => {
   try {
     const user = await getUserFromReq(req);
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
-    
+
     if (!mongoConnected) {
       return res.json({ notifications: [] }); // Fallback for file-based storage
     }
-    
+
+    console.log(`📥 Fetching notifications for user ${user.uid}`);
     const notifications = await Notification.find({ userId: user.uid })
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();
-    
+
+    console.log(`✅ Found ${notifications.length} notifications for user ${user.uid}`);
     const unreadCount = await Notification.countDocuments({ userId: user.uid, read: false });
-    
+
     return res.json({ notifications, unreadCount });
   } catch (err) {
     console.error('Get notifications error:', err);
@@ -886,16 +888,16 @@ app.post('/api/notifications/:id/read', async (req, res) => {
   try {
     const user = await getUserFromReq(req);
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
-    
+
     if (!mongoConnected) {
       return res.json({ success: true });
     }
-    
+
     await Notification.updateOne(
       { id: req.params.id, userId: user.uid },
       { read: true }
     );
-    
+
     return res.json({ success: true });
   } catch (err) {
     console.error('Mark read error:', err);
@@ -908,16 +910,16 @@ app.post('/api/notifications/read-all', async (req, res) => {
   try {
     const user = await getUserFromReq(req);
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
-    
+
     if (!mongoConnected) {
       return res.json({ success: true });
     }
-    
+
     await Notification.updateMany(
       { userId: user.uid, read: false },
       { read: true }
     );
-    
+
     return res.json({ success: true });
   } catch (err) {
     console.error('Mark all read error:', err);
@@ -931,22 +933,22 @@ app.post('/api/posts/:id/comments', async (req, res) => {
   if (!author || !content) {
     return res.status(400).json({ message: 'Author and content required' });
   }
-  
+
   try {
     const actor = await getUserFromReq(req);
     if (!actor) return res.status(401).json({ message: 'Not authenticated' });
 
     const comment = { id: randomUUID(), author, content, createdAt: new Date(), parentId: parentId || null };
-    
+
     if (mongoConnected) {
       const updated = await Post.findOneAndUpdate({ id: req.params.id }, { $push: { comments: comment } }, { new: true }).lean();
       if (!updated) return res.status(404).json({ message: 'Not found' });
-      
+
       // Create notification to post author if commenter is not the author
       if (updated.authorId && updated.authorId !== actor.uid) {
         await createNotification('comment', updated.authorId, actor, updated.id, updated.title, content);
       }
-      
+
       // Notify mentioned users in comment
       await notifyMentions({
         textParts: [content],
@@ -954,14 +956,14 @@ app.post('/api/posts/:id/comments', async (req, res) => {
         postId: updated.id,
         postTitle: updated.title
       });
-      
+
       return res.status(201).json(comment);
     }
-    
+
     const posts = readPosts();
     const idx = posts.findIndex(p => p.id === req.params.id);
     if (idx === -1) return res.status(404).json({ message: 'Not found' });
-    
+
     posts[idx].comments = posts[idx].comments || [];
     posts[idx].comments.push(comment);
     writePosts(posts);
@@ -981,7 +983,7 @@ app.get('/api/series/:seriesId', async (req, res) => {
       return res.json({ seriesId: sid, total: posts.length, posts });
     }
     let posts = readPosts().filter(p => p.seriesId === sid);
-    posts.sort((a,b) => (a.partNumber ?? Infinity) - (b.partNumber ?? Infinity) || (new Date(a.createdAt) - new Date(b.createdAt)));
+    posts.sort((a, b) => (a.partNumber ?? Infinity) - (b.partNumber ?? Infinity) || (new Date(a.createdAt) - new Date(b.createdAt)));
     return res.json({ seriesId: sid, total: posts.length, posts });
   } catch (err) {
     console.error(err);
@@ -993,7 +995,7 @@ app.get('/api/series/:seriesId', async (req, res) => {
 // Body: { type?: 'like'|'love'|'laugh'|'wow'|'sad'|'angry', prevType?: same as type }
 app.post('/api/posts/:id/react', async (req, res) => {
   try {
-    const allowed = ['like','love','laugh','wow','sad','angry'];
+    const allowed = ['like', 'love', 'laugh', 'wow', 'sad', 'angry'];
     const { type, prevType } = req.body || {};
     if (!type && !prevType) return res.status(400).json({ message: 'type or prevType required' });
     if (type && !allowed.includes(type)) return res.status(400).json({ message: 'Invalid reaction type' });
@@ -1030,7 +1032,7 @@ app.post('/api/posts/:id/react', async (req, res) => {
     const idx = posts.findIndex(p => p.id === req.params.id);
     if (idx === -1) return res.status(404).json({ message: 'Not found' });
     const p = posts[idx];
-    p.reactions = p.reactions || { like:0, love:0, laugh:0, wow:0, sad:0, angry:0 };
+    p.reactions = p.reactions || { like: 0, love: 0, laugh: 0, wow: 0, sad: 0, angry: 0 };
     if (type) p.reactions[type] = (p.reactions[type] || 0) + 1;
     if (prevType && prevType !== type) p.reactions[prevType] = Math.max(0, (p.reactions[prevType] || 0) - 1);
     if (!type && prevType) p.reactions[prevType] = Math.max(0, (p.reactions[prevType] || 0) - 1);
@@ -1069,7 +1071,7 @@ app.get('/api/tags/trending', async (req, res) => {
       }
     }
     const tags = Object.entries(counts)
-      .sort((a,b) => b[1] - a[1])
+      .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
       .map(([tag, count]) => ({ tag, count }));
     res.json({ tags });
@@ -1104,7 +1106,7 @@ app.get('/api/posts/tags/trending', async (req, res) => {
       }
     }
     const tags = Object.entries(counts)
-      .sort((a,b) => b[1] - a[1])
+      .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
       .map(([tag, count]) => ({ tag, count }));
     res.json({ tags });
@@ -1153,7 +1155,7 @@ app.get('/api/news/search', async (req, res) => {
     if (match) {
       const status = parseInt(match[1]) || 500;
       let details = match[2];
-      try { details = JSON.parse(details); } catch {}
+      try { details = JSON.parse(details); } catch { }
       return res.status(status).json({ message: 'NewsAPI error', details });
     }
     res.status(500).json({ message: 'Failed to fetch news', error: err.message });
@@ -1164,19 +1166,19 @@ app.get('/api/news/search', async (req, res) => {
 app.get('/api/news/top-headlines', async (req, res) => {
   try {
     if (!NEWSAPI_KEY) return res.status(500).json({ message: 'API key not configured' });
-    
+
     const { country, category, sources, language } = req.query;
-    
+
     if (sources && (country || category)) {
       return res.status(400).json({ message: 'Cannot mix sources with country/category' });
     }
-    
+
     const params = new URLSearchParams({ apiKey: NEWSAPI_KEY });
     if (country) params.set('country', country);
     if (category) params.set('category', category);
     if (sources) params.set('sources', sources);
     if (language) params.set('language', language);
-    
+
     const url = `https://newsapi.org/v2/top-headlines?${params}`;
     const data = await fetchFromNewsAPI(url);
     res.json(data);
@@ -1186,7 +1188,7 @@ app.get('/api/news/top-headlines', async (req, res) => {
     if (match) {
       const status = parseInt(match[1]) || 500;
       let details = match[2];
-      try { details = JSON.parse(details); } catch {}
+      try { details = JSON.parse(details); } catch { }
       return res.status(status).json({ message: 'NewsAPI error', details });
     }
     res.status(500).json({ message: 'Failed to fetch headlines', error: err.message });
@@ -1197,9 +1199,9 @@ app.get('/api/news/top-headlines', async (req, res) => {
 app.post('/api/news/import', async (req, res) => {
   try {
     if (!NEWSAPI_KEY) return res.status(500).json({ message: 'API key not configured' });
-    
+
     const { q, from, to, sortBy, country, category, sources } = { ...req.query, ...req.body };
-    
+
     let url;
     if (country || category || sources) {
       if (sources && (country || category)) {
@@ -1231,16 +1233,16 @@ app.post('/api/news/import', async (req, res) => {
       if (sortBy) params.set('sortBy', String(sortBy));
       url = `https://newsapi.org/v2/everything?${params}`;
     }
-    
+
     const data = await fetchFromNewsAPI(url);
     const articles = data.articles || [];
     const imported = [];
-    
+
     for (const a of articles) {
       if (mongoConnected) {
         const exists = a.url ? await Post.findOne({ sourceUrl: a.url }) : await Post.findOne({ title: a.title });
         if (exists) continue;
-        
+
         const created = await Post.create({
           id: randomUUID(),
           title: a.title || 'Untitled',
@@ -1248,7 +1250,7 @@ app.post('/api/news/import', async (req, res) => {
           author: a.author || a.source?.name || 'News',
           createdAt: a.publishedAt ? new Date(a.publishedAt) : new Date(),
           likes: 0,
-          reactions: { like:0, love:0, laugh:0, wow:0, sad:0, angry:0 },
+          reactions: { like: 0, love: 0, laugh: 0, wow: 0, sad: 0, angry: 0 },
           comments: [],
           sourceUrl: a.url,
           tags: extractTags(a),
@@ -1258,7 +1260,7 @@ app.post('/api/news/import', async (req, res) => {
       } else {
         const posts = readPosts();
         if (a.url && posts.some(p => p.sourceUrl === a.url)) continue;
-        
+
         const newPost = {
           id: randomUUID(),
           title: a.title || 'Untitled',
@@ -1276,7 +1278,7 @@ app.post('/api/news/import', async (req, res) => {
         writePosts(posts);
       }
     }
-    
+
     res.json({ imported: imported.length, posts: imported });
   } catch (err) {
     console.error(err);
@@ -1284,7 +1286,7 @@ app.post('/api/news/import', async (req, res) => {
     if (match) {
       const status = parseInt(match[1]) || 500;
       let details = match[2];
-      try { details = JSON.parse(details); } catch {}
+      try { details = JSON.parse(details); } catch { }
       return res.status(status).json({ message: 'NewsAPI error', details });
     }
     res.status(500).json({ message: 'Failed to import', error: err.message });
@@ -1313,7 +1315,7 @@ app.post('/api/ai/generate', async (req, res) => {
     if (!prompt) return res.status(400).json({ message: 'Prompt is required' });
     const m = geminiClient.getGenerativeModel({ model: model || 'gemini-2.0-flash' });
     const out = await m.generateContent(prompt);
-    const text = out.response?.text?.() || out.response?.candidates?.[0]?.content?.parts?.map(p=>p.text).join('\n') || '';
+    const text = out.response?.text?.() || out.response?.candidates?.[0]?.content?.parts?.map(p => p.text).join('\n') || '';
     res.json({ text });
   } catch (e) {
     console.error('AI generate failed:', e);
@@ -1362,7 +1364,7 @@ const setSession = (res, user) => {
   // For production, use 'none' to allow cross-origin cookies (localhost -> Render)
   const isProduction = process.env.NODE_ENV === 'production' || IS_SERVERLESS;
   const sameSiteOpt = (process.env.COOKIE_SAMESITE || (isProduction ? 'none' : 'lax')).toLowerCase();
-  const sameSite = ['lax','strict','none'].includes(sameSiteOpt) ? sameSiteOpt : 'lax';
+  const sameSite = ['lax', 'strict', 'none'].includes(sameSiteOpt) ? sameSiteOpt : 'lax';
   res.cookie('session', token, {
     httpOnly: true,
     sameSite,
@@ -1408,7 +1410,7 @@ const sendWelcomeEmail = async (email, name) => {
         </div>
       `
     });
-  /* log removed */
+    /* log removed */
   } catch (err) {
     console.error('Failed to send welcome email:', err.message);
   }
@@ -1420,12 +1422,12 @@ const getUserFromReq = async (req) => {
     if (!token) return null;
     const decoded = jwt.verify(token, JWT_SECRET);
     if (!decoded?.uid) return null;
-    
+
     if (mongoConnected) {
       const u = await User.findOne({ uid: decoded.uid }).lean();
       return u;
     }
-    
+
     // file-based fallback
     const usersFile = path.join(__dirname, 'users.json');
     if (fs.existsSync(usersFile)) {
@@ -1444,52 +1446,52 @@ app.post('/api/auth/signup', async (req, res) => {
     const { email, password, name, username } = req.body || {};
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
     if (!username) return res.status(400).json({ message: 'Username required' });
-    
+
     const emailLower = email.toLowerCase().trim();
     const usernameLower = username.toLowerCase().trim();
-    
+
     // Validate username format (3-20 chars, alphanumeric + underscore only)
     const usernameRegex = /^[a-z0-9_]{3,20}$/;
     if (!usernameRegex.test(usernameLower)) {
-      return res.status(400).json({ 
-        message: 'Username must be 3-20 characters and contain only letters, numbers, and underscores' 
+      return res.status(400).json({
+        message: 'Username must be 3-20 characters and contain only letters, numbers, and underscores'
       });
     }
-    
+
     // Reserved usernames
     const reservedUsernames = ['admin', 'api', 'auth', 'help', 'support', 'settings', 'profile', 'posts', 'user', 'users'];
     if (reservedUsernames.includes(usernameLower)) {
       return res.status(400).json({ message: 'This username is reserved' });
     }
-    
+
     if (password.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' });
-    
+
     // Check if user already exists (email or username)
     let existingUser;
     if (mongoConnected) {
-      existingUser = await User.findOne({ 
-        $or: [{ email: emailLower }, { username: usernameLower }] 
+      existingUser = await User.findOne({
+        $or: [{ email: emailLower }, { username: usernameLower }]
       });
       if (existingUser) {
         const field = existingUser.email === emailLower ? 'Email' : 'Username';
         return res.status(400).json({ message: `${field} already taken` });
       }
     } else {
-  const usersFile = path.join(__dirname, 'users.json');
-  const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
-  existingUser = arr.find(x => x.email === emailLower || x.username === usernameLower);
+      const usersFile = path.join(__dirname, 'users.json');
+      const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
+      existingUser = arr.find(x => x.email === emailLower || x.username === usernameLower);
       if (existingUser) {
         const field = existingUser.email === emailLower ? 'Email' : 'Username';
         return res.status(400).json({ message: `${field} already taken` });
       }
     }
-    
+
     // Hash password
     const bcrypt = require('bcrypt');
     const hashedPassword = await bcrypt.hash(password, 10);
     const uid = crypto.randomUUID();
     const userName = name || emailLower.split('@')[0];
-    
+
     let user;
     if (mongoConnected) {
       user = await User.create({
@@ -1528,10 +1530,10 @@ app.post('/api/auth/signup', async (req, res) => {
         fs.writeFileSync(usersFile, JSON.stringify(arr, null, 2));
       }
     }
-    
+
     // Send welcome email
     sendWelcomeEmail(emailLower, userName);
-    
+
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
     setSession(res, userWithoutPassword);
@@ -1547,29 +1549,29 @@ app.post('/api/auth/signin', async (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
-    
+
     const emailLower = email.toLowerCase().trim();
-    
+
     let user;
     if (mongoConnected) {
       user = await User.findOne({ email: emailLower }).lean();
     } else {
-  const usersFile = path.join(__dirname, 'users.json');
-  const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
-  user = arr.find(x => x.email === emailLower);
+      const usersFile = path.join(__dirname, 'users.json');
+      const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
+      user = arr.find(x => x.email === emailLower);
     }
-    
+
     if (!user || user.provider !== 'email') {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
-    
+
     // Verify password
     const bcrypt = require('bcrypt');
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
-    
+
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
     setSession(res, userWithoutPassword);
@@ -1598,12 +1600,12 @@ app.post('/api/users/follow', async (req, res) => {
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
     const author = (req.body?.author || '').trim();
     if (!author) return res.status(400).json({ message: 'author required' });
-    
+
     const toggle = (list) => {
       const has = list.includes(author);
       return has ? list.filter(a => a !== author) : [author, ...list];
     };
-    
+
     if (mongoConnected) {
       const updated = await User.findOneAndUpdate(
         { uid: user.uid },
@@ -1634,19 +1636,19 @@ app.post('/api/users/follow', async (req, res) => {
 app.get('/api/users/check-username/:username', async (req, res) => {
   try {
     const username = req.params.username.toLowerCase().trim();
-    
+
     // Validate username format
     const usernameRegex = /^[a-z0-9_]{3,20}$/;
     if (!usernameRegex.test(username)) {
       return res.json({ available: false, message: 'Invalid format' });
     }
-    
+
     // Check reserved usernames
     const reservedUsernames = ['admin', 'api', 'auth', 'help', 'support', 'settings', 'profile', 'posts', 'user', 'users'];
     if (reservedUsernames.includes(username)) {
       return res.json({ available: false, message: 'Reserved username' });
     }
-    
+
     let existingUser;
     if (mongoConnected) {
       existingUser = await User.findOne({ username });
@@ -1655,7 +1657,7 @@ app.get('/api/users/check-username/:username', async (req, res) => {
       const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
       existingUser = arr.find(x => x.username === username);
     }
-    
+
     return res.json({ available: !existingUser, message: existingUser ? 'Username taken' : 'Available' });
   } catch (e) {
     console.error('Check username error:', e.message);
@@ -1775,13 +1777,13 @@ app.get('/api/users/suggested', async (req, res) => {
   try {
     const limit = Math.min(20, Math.max(1, parseInt(req.query.limit || '10')));
     const currentUser = req.user;
-    
+
     if (mongoConnected) {
       // Get users sorted by follower count and post activity
       const users = await User.find()
         .select('-password -email')
         .lean();
-      
+
       // Calculate user scores based on followers and activity
       const scoredUsers = users.map(u => {
         const followerCount = u.followers?.length || 0;
@@ -1790,47 +1792,47 @@ app.get('/api/users/suggested', async (req, res) => {
         const score = followerCount * 2 + followingCount * 0.5;
         return { ...u, score };
       });
-      
+
       // Filter out current user if authenticated
       let filteredUsers = scoredUsers;
       if (currentUser) {
-        filteredUsers = scoredUsers.filter(u => 
-          u.uid !== currentUser.uid && 
+        filteredUsers = scoredUsers.filter(u =>
+          u.uid !== currentUser.uid &&
           !(currentUser.following || []).includes(u.uid)
         );
       }
-      
+
       // Sort by score and limit
       const suggested = filteredUsers
         .sort((a, b) => b.score - a.score)
         .slice(0, limit)
         .map(({ score, ...user }) => user); // Remove score from response
-      
+
       return res.json({ users: suggested });
     }
-    
+
     // File-based fallback
     const usersFile = path.join(__dirname, 'users.json');
     if (!fs.existsSync(usersFile)) {
       return res.json({ users: [] });
     }
-    
+
     const users = JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]');
     const sanitized = users.map(({ password, email, ...rest }) => rest);
-    
+
     let filtered = sanitized;
     if (currentUser) {
-      filtered = sanitized.filter(u => 
+      filtered = sanitized.filter(u =>
         u.uid !== currentUser.uid &&
         !(currentUser.following || []).includes(u.uid)
       );
     }
-    
+
     // Sort by follower count
     const suggested = filtered
       .sort((a, b) => (b.followers?.length || 0) - (a.followers?.length || 0))
       .slice(0, limit);
-    
+
     return res.json({ users: suggested });
   } catch (e) {
     console.error('Get suggested users error:', e.message);
@@ -1842,7 +1844,7 @@ app.get('/api/users/suggested', async (req, res) => {
 app.get('/api/users/:username', async (req, res) => {
   try {
     const username = req.params.username.toLowerCase().trim();
-    
+
     let user;
     if (mongoConnected) {
       user = await User.findOne({ username }).select('-password').lean();
@@ -1855,11 +1857,11 @@ app.get('/api/users/:username', async (req, res) => {
         user = userWithoutPassword;
       }
     }
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     return res.json({ user });
   } catch (e) {
     console.error('Get user error:', e.message);
@@ -1871,34 +1873,34 @@ app.get('/api/users/:username', async (req, res) => {
 app.get('/api/users/:username/followers', async (req, res) => {
   try {
     const username = req.params.username.toLowerCase().trim();
-    
+
     if (mongoConnected) {
       const user = await User.findOne({ username }).select('followers').lean();
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       // Get full user details for each follower
       const followers = await User.find({ uid: { $in: user.followers || [] } })
         .select('-password -email')
         .lean();
-      
+
       return res.json({ followers });
     }
-    
+
     // File-based fallback
     const usersFile = path.join(__dirname, 'users.json');
     const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
     const user = arr.find(x => x.username === username);
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     const followers = arr
       .filter(u => (user.followers || []).includes(u.uid))
       .map(({ password, email, ...rest }) => rest);
-    
+
     return res.json({ followers });
   } catch (e) {
     console.error('Get followers error:', e.message);
@@ -1910,34 +1912,34 @@ app.get('/api/users/:username/followers', async (req, res) => {
 app.get('/api/users/:username/following', async (req, res) => {
   try {
     const username = req.params.username.toLowerCase().trim();
-    
+
     if (mongoConnected) {
       const user = await User.findOne({ username }).select('following').lean();
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       // Get full user details for each following
       const following = await User.find({ uid: { $in: user.following || [] } })
         .select('-password -email')
         .lean();
-      
+
       return res.json({ following });
     }
-    
+
     // File-based fallback
     const usersFile = path.join(__dirname, 'users.json');
     const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
     const user = arr.find(x => x.username === username);
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     const following = arr
       .filter(u => (user.following || []).includes(u.uid))
       .map(({ password, email, ...rest }) => rest);
-    
+
     return res.json({ following });
   } catch (e) {
     console.error('Get following error:', e.message);
@@ -1950,24 +1952,24 @@ app.post('/api/users/follow/:username', async (req, res) => {
   try {
     const user = req.user;
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
-    
+
     const targetUsername = req.params.username.toLowerCase().trim();
-    
+
     // Can't follow yourself
     if (user.username === targetUsername) {
       return res.status(400).json({ message: "You can't follow yourself" });
     }
-    
+
     let targetUser;
     if (mongoConnected) {
       targetUser = await User.findOne({ username: targetUsername });
       if (!targetUser) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       const currentUser = await User.findOne({ uid: user.uid });
       const isFollowing = currentUser.following.includes(targetUser.uid);
-      
+
       if (isFollowing) {
         // Unfollow
         await User.updateOne(
@@ -1988,7 +1990,7 @@ app.post('/api/users/follow/:username', async (req, res) => {
           { uid: targetUser.uid },
           { $addToSet: { followers: user.uid } }
         );
-        
+
         // Handle notifications and emails asynchronously (don't wait for them)
         // This makes the follow action much faster for the user
         setImmediate(async () => {
@@ -1997,14 +1999,14 @@ app.post('/api/users/follow/:username', async (req, res) => {
             console.log(`📬 Creating follow notification for user ${targetUser.uid} from ${user.username}`);
             const notification = await createNotification('follow', targetUser.uid, user);
             console.log(`✅ Notification created:`, notification ? 'Success' : 'Failed');
-            
+
             // Send email notification if email is configured and user has email notifications enabled
             const emailSettings = targetUser.notificationSettings?.emailNotifications;
-            const shouldSendEmail = mailTransporter && 
-                                   targetUser.email && 
-                                   emailSettings?.enabled !== false && 
-                                   emailSettings?.follows !== false;
-            
+            const shouldSendEmail = mailTransporter &&
+              targetUser.email &&
+              emailSettings?.enabled !== false &&
+              emailSettings?.follows !== false;
+
             if (shouldSendEmail) {
               try {
                 console.log(`📧 Sending follow email to ${targetUser.email}`);
@@ -2044,29 +2046,29 @@ app.post('/api/users/follow/:username', async (req, res) => {
           }
         });
       }
-      
+
       const updatedUser = await User.findOne({ uid: user.uid }).select('-password').lean();
-      return res.json({ 
+      return res.json({
         following: !isFollowing,
         user: updatedUser
       });
     } else {
       const usersFile = path.join(__dirname, 'users.json');
       const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
-      
+
       targetUser = arr.find(x => x.username === targetUsername);
       if (!targetUser) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       const currentUserIdx = arr.findIndex(x => x.uid === user.uid);
       const targetUserIdx = arr.findIndex(x => x.username === targetUsername);
-      
+
       if (!arr[currentUserIdx].following) arr[currentUserIdx].following = [];
       if (!arr[targetUserIdx].followers) arr[targetUserIdx].followers = [];
-      
+
       const isFollowing = arr[currentUserIdx].following.includes(targetUser.uid);
-      
+
       if (isFollowing) {
         // Unfollow
         arr[currentUserIdx].following = arr[currentUserIdx].following.filter(id => id !== targetUser.uid);
@@ -2076,13 +2078,13 @@ app.post('/api/users/follow/:username', async (req, res) => {
         arr[currentUserIdx].following.push(targetUser.uid);
         arr[targetUserIdx].followers.push(user.uid);
       }
-      
+
       if (!IS_SERVERLESS) {
         fs.writeFileSync(usersFile, JSON.stringify(arr, null, 2));
       }
-      
+
       const { password, ...userWithoutPassword } = arr[currentUserIdx];
-      return res.json({ 
+      return res.json({
         following: !isFollowing,
         user: userWithoutPassword
       });
