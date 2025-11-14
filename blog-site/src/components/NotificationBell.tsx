@@ -177,7 +177,7 @@ export default function NotificationBell() {
               {loading ? (
                 <div className="flex items-center justify-center p-12"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
               ) : notifications.length === 0 ? (
-                <div className="p-12 text-center text-gray-500 dark:text-gray-400"><FiBell className="w-16 h-16 mx-auto mb-4 opacity-30" /><p className="text-lg font-medium">No notifications yet</p><p className="text-sm mt-1">When someone interacts with your posts, you'll see it here.</p></div>
+                <div className="p-12 text-center text-gray-500 dark:text-gray-400"><FiBell className="w-16 h-16 mx-auto mb-4 opacity-30" /><p className="text-lg font-medium">No notifications yet</p><p className="text-sm mt-1">When someone interacts with your posts, you&apos;ll see it here.</p></div>
               ) : (
                 <div>
                   {notifications.map(n => (
