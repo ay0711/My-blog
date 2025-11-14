@@ -217,11 +217,12 @@ export default function NotificationBell() {
                                     e.stopPropagation();
                                     deleteNotification(n.id);
                                   }}
-                                  className="p-1.5 rounded bg-red-500 text-white hover:bg-red-600 active:bg-red-700"
+                                  className="p-2 rounded-full bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-sm"
                                   aria-label="Delete notification"
+                                  title="Delete"
                                 >
-                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                   </svg>
                                 </button>
                               </div>
