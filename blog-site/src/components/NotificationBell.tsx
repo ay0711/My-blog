@@ -179,11 +179,6 @@ export default function NotificationBell() {
                 )}
               </div>
             </div>
-            {notifications.length > 0 && (
-              <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 border-b border-gray-200 dark:border-gray-700">
-                <p className="text-xs text-gray-600 dark:text-gray-400 text-center">💡 Swipe left to delete a notification</p>
-              </div>
-            )}
             <div className={isMobile ? 'flex-1 overflow-y-auto overscroll-contain' : 'max-h-96 overflow-y-auto'}>
               {loading ? (
                 <div className="flex items-center justify-center p-8"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
@@ -192,30 +187,10 @@ export default function NotificationBell() {
               ) : (
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {notifications.map(n => (
-                    <motion.div
+                    <div
                       key={n.id}
-                      drag="x"
-                      dragConstraints={{ left: -150, right: 0 }}
-                      dragElastic={0.1}
-                      onDragEnd={(e, info) => {
-                        if (info.offset.x < -60) {
-                          deleteNotification(n.id);
-                        }
-                      }}
-                      whileDrag={{ 
-                        scale: 0.98,
-                        opacity: 0.8,
-                        transition: { duration: 0.1 }
-                      }}
-                      className="relative bg-white dark:bg-gray-900 select-none"
-                      style={{ touchAction: 'pan-x' }}
+                      className="relative bg-white dark:bg-gray-900 group"
                     >
-                      <motion.div 
-                        className="absolute inset-y-0 right-0 flex items-center justify-center w-20 bg-red-500 text-white" 
-                        style={{ pointerEvents: 'none' }}
-                      >
-                        <span className="text-2xl">🗑️</span>
-                      </motion.div>
                       <div
                         onClick={() => {
                           if (!n.read) markAsRead(n.id);
@@ -223,7 +198,6 @@ export default function NotificationBell() {
                           window.location.href = n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#';
                         }}
                         className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition focus:outline-none cursor-pointer relative ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
-                        style={{ userSelect: 'none' }}
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0">
@@ -243,7 +217,20 @@ export default function NotificationBell() {
                           {!n.read && <div className="w-2 h-2 bg-indigo-600 rounded-full flex-shrink-0 mt-2" />}
                         </div>
                       </div>
-                    </motion.div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteNotification(n.id);
+                        }}
+                        className="absolute top-2 right-2 p-2 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 z-10"
+                        aria-label="Delete notification"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    </div>
                   ))}
                 </div>
               )}
