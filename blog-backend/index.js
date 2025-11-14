@@ -27,6 +27,34 @@ app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+// Authentication middleware - attach user to request if valid session token exists
+app.use(async (req, res, next) => {
+  try {
+    const token = req.cookies?.session;
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET || 'dev_secret_change_in_production');
+      if (decoded?.uid) {
+        // Try to fetch user from MongoDB or file
+        if (mongoose.connection.readyState === 1) {
+          const user = await User.findOne({ uid: decoded.uid }).lean();
+          if (user) req.user = user;
+        } else {
+          // File-based fallback
+          const usersFile = path.join(__dirname, 'users.json');
+          if (fs.existsSync(usersFile)) {
+            const users = JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]');
+            const user = users.find(u => u.uid === decoded.uid);
+            if (user) req.user = user;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    // Invalid token - just continue without user
+  }
+  next();
+});
+
 const NEWSAPI_KEY = process.env.NEWSAPI_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_in_production';
