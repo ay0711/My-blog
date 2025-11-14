@@ -195,24 +195,27 @@ export default function NotificationBell() {
                     <motion.div
                       key={n.id}
                       drag="x"
-                      dragConstraints={{ left: -200, right: 0 }}
-                      dragElastic={0.2}
-                      dragSnapToOrigin
+                      dragConstraints={{ left: -150, right: 0 }}
+                      dragElastic={0.1}
                       onDragEnd={(e, info) => {
-                        if (info.offset.x < -80) {
+                        if (info.offset.x < -60) {
                           deleteNotification(n.id);
                         }
                       }}
                       whileDrag={{ 
-                        scale: 1.02,
-                        backgroundColor: 'rgba(239, 68, 68, 0.15)'
+                        scale: 0.98,
+                        opacity: 0.8,
+                        transition: { duration: 0.1 }
                       }}
-                      className="relative bg-white dark:bg-gray-900 cursor-grab active:cursor-grabbing"
+                      className="relative bg-white dark:bg-gray-900 select-none"
                       style={{ touchAction: 'pan-x' }}
                     >
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-red-500" style={{ pointerEvents: 'none' }}>
-                        <span className="text-sm font-medium">🗑️ Delete</span>
-                      </div>
+                      <motion.div 
+                        className="absolute inset-y-0 right-0 flex items-center justify-center w-20 bg-red-500 text-white" 
+                        style={{ pointerEvents: 'none' }}
+                      >
+                        <span className="text-2xl">🗑️</span>
+                      </motion.div>
                       <div
                         onClick={() => {
                           if (!n.read) markAsRead(n.id);
