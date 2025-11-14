@@ -227,14 +227,6 @@ export default function NotificationBell() {
                 </div>
               )}
             </div>
-            <div className={isMobile ? 'px-4 py-3 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900' : 'p-3 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700'}>
-              {notifications.length > 0 ? `${notifications.length} notification${notifications.length !== 1 ? 's' : ''}` : 'No recent activity'}
-              {notifications.length > 0 && (
-                <div className="mt-2">
-                  <Link href="/notifications" onClick={() => setIsOpen(false)} className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm font-medium">View all</Link>
-                </div>
-              )}
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
