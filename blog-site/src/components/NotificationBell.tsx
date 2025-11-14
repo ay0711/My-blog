@@ -1,10 +1,10 @@
-'use client';
+"use client";
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiBell } from 'react-icons/fi';
+import Link from 'next/link';
 import { fetchJSON } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
-import Link from 'next/link';
 
 interface Notification {
   id: string;
@@ -25,67 +25,57 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-      <button
-        aria-haspopup="true"
-        aria-expanded={isOpen}
-        aria-label="Notifications"
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-md"
+  const [loading, setLoading] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef(user);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Update the ref whenever user changes
+  // Track viewport width
   useEffect(() => {
-    userRef.current = user;
-  }, [user]);
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
+  // Keep user ref in sync
+  useEffect(() => { userRef.current = user; }, [user]);
+
+  // Poll notifications when authenticated
   useEffect(() => {
-    // Don't do anything if auth is still loading
-    if (authLoading) {
-      return;
-    }
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute right-0 mt-2 md:w-96 w-[92vw] max-w-sm bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
+    if (authLoading) return;
+    if (user) {
+      loadNotifications();
+      const interval = setInterval(loadNotifications, 30000);
       return () => clearInterval(interval);
     }
-    
-    // If user is not authenticated, clear notifications
     setNotifications([]);
     setUnreadCount(0);
   }, [user, authLoading]);
-                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none"
-  // Close dropdown when clicking outside
+
+  // Close on outside click
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
-            <div className="max-h-[70vh] overflow-y-auto overscroll-contain">
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const loadNotifications = async () => {
-    // Don't load notifications if user is not authenticated (check the ref for latest value)
-    if (!userRef.current) {
-      return;
-    }
-    
+    if (!userRef.current) return;
     try {
       setLoading(true);
       const data = await fetchJSON<{ notifications: Notification[]; unreadCount: number }>('/api/notifications');
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
     } catch (err) {
-      // Silently ignore 401 errors (user not authenticated)
       if (err instanceof Error && err.message.includes('401')) {
-        // Clear notifications state when unauthorized
-                      className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 ${
-                        !notif.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''
-                      }`}
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
       }
       console.error('Failed to load notifications:', err);
     } finally {
@@ -93,103 +83,51 @@ export default function NotificationBell() {
     }
   };
 
-  const markAsRead = async (notificationId: string) => {
+  const markAsRead = async (id: string) => {
     if (!user) return;
-    
     try {
-      await fetchJSON(`/api/notifications/${notificationId}/read`, { method: 'POST' });
-      setNotifications(prev =>
-        prev.map(n => (n.id === notificationId ? { ...n, read: true } : n))
-      );
+      await fetchJSON(`/api/notifications/${id}/read`, { method: 'POST' });
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error('Failed to mark as read:', err);
-    }
+    } catch (e) { console.error('Failed to mark as read:', e); }
   };
 
   const markAllAsRead = async () => {
     if (!user) return;
-    
     try {
       await fetchJSON('/api/notifications/read-all', { method: 'POST' });
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
-    } catch (err) {
-      console.error('Failed to mark all as read:', err);
+    } catch (e) { console.error('Failed to mark all as read:', e); }
+  };
+
+  const getNotificationText = (n: Notification) => {
+    switch (n.type) {
+      case 'like': return (<><span className="font-semibold">@{n.fromUsername}</span> liked your post {n.postTitle && <span className="italic">&ldquo;{n.postTitle}&rdquo;</span>}</>);
+      case 'comment': return (<><span className="font-semibold">@{n.fromUsername}</span> commented on your post {n.commentText && <span className="text-gray-600 dark:text-gray-400 block text-sm mt-1">&ldquo;{n.commentText.substring(0,50)}{n.commentText.length>50?'...':''}&rdquo;</span>}</>);
+      case 'mention': return (<><span className="font-semibold">@{n.fromUsername}</span> mentioned you in a post</>);
+      case 'follow': return (<><span className="font-semibold">@{n.fromUsername}</span> started following you</>);
+      case 'repost': return (<><span className="font-semibold">@{n.fromUsername}</span> reposted your post {n.postTitle && <span className="italic">&ldquo;{n.postTitle}&rdquo;</span>}</>);
+      default: return 'New notification';
     }
   };
 
-  const getNotificationText = (notif: Notification) => {
-    switch (notif.type) {
-      case 'like':
-        return (
-          <>
-            <span className="font-semibold">@{notif.fromUsername}</span> liked your post{' '}
-            {notif.postTitle && <span className="italic">&ldquo;{notif.postTitle}&rdquo;</span>}
-          </>
-        );
-      case 'comment':
-        return (
-          <>
-            <span className="font-semibold">@{notif.fromUsername}</span> commented on your post
-            {notif.commentText && <span className="text-gray-600 dark:text-gray-400 block text-sm mt-1">&ldquo;{notif.commentText.substring(0, 50)}{notif.commentText.length > 50 ? '...' : ''}&rdquo;</span>}
-          </>
-        );
-      case 'mention':
-        return (
-          <>
-            <span className="font-semibold">@{notif.fromUsername}</span> mentioned you in a post
-          </>
-        );
-      case 'follow':
-        return (
-          <>
-            <span className="font-semibold">@{notif.fromUsername}</span> started following you
-          </>
-        );
-      case 'repost':
-        return (
-          <>
-            <span className="font-semibold">@{notif.fromUsername}</span> reposted your post{' '}
-            {notif.postTitle && <span className="italic">&ldquo;{notif.postTitle}&rdquo;</span>}
-          </>
-        );
-      default:
-        return 'New notification';
-    }
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'like': return '❤️';
-      case 'comment': return '💬';
-      case 'mention': return '📢';
-      case 'follow': return '👤';
-      case 'repost': return '🔄';
-      default: return '🔔';
-    }
-  };
-
-  const getTimeAgo = (dateString: string) => {
-    const now = new Date();
-    const date = new Date(dateString);
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (seconds < 60) return 'just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-    return date.toLocaleDateString();
+  const getNotificationIcon = (t: string) => ({ like:'❤️', comment:'💬', mention:'📢', follow:'👤', repost:'🔄' }[t] || '🔔');
+  const getTimeAgo = (d: string) => {
+    const date = new Date(d); const secs = Math.floor((Date.now() - date.getTime())/1000);
+    if (secs<60) return 'just now'; if (secs<3600) return `${Math.floor(secs/60)}m ago`; if (secs<86400) return `${Math.floor(secs/3600)}h ago`; if (secs<604800) return `${Math.floor(secs/86400)}d ago`; return date.toLocaleDateString();
   };
 
   if (!user) return null;
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Bell Icon */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition"
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+        aria-label="Notifications"
+        onClick={() => setIsOpen(o => !o)}
+        className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-md"
       >
         <FiBell className="w-6 h-6" />
         {unreadCount > 0 && (
@@ -198,108 +136,71 @@ export default function NotificationBell() {
           </span>
         )}
       </button>
-
-      {/* Dropdown */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: isMobile ? 8 : -8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
+            exit={{ opacity: 0, y: isMobile ? 8 : -8 }}
+            className={isMobile
+              ? 'fixed inset-0 top-16 z-50 flex flex-col bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700'
+              : 'absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50'}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className={isMobile ? 'px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-900/95' : 'flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700'}>
               <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Notifications</h3>
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                >
-                  Mark all read
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                {unreadCount > 0 && (
+                  <button onClick={markAllAsRead} className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none">Mark all read</button>
+                )}
+                {isMobile && (
+                  <button onClick={() => setIsOpen(false)} aria-label="Close notifications" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none">✕</button>
+                )}
+              </div>
             </div>
-
-            {/* Notifications List */}
-            <div className="max-h-96 overflow-y-auto">
+            <div className={isMobile ? 'flex-1 overflow-y-auto overscroll-contain' : 'max-h-96 overflow-y-auto'}>
               {loading ? (
-                <div className="flex items-center justify-center p-8">
-                  <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                </div>
+                <div className="flex items-center justify-center p-8"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
               ) : notifications.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                  <FiBell className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>No notifications yet</p>
-                </div>
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400"><FiBell className="w-12 h-12 mx-auto mb-3 opacity-50" /><p>No notifications yet</p></div>
               ) : (
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {notifications.map((notif) => (
+                  {notifications.map(n => (
                     <Link
-                      key={notif.id}
-                      href={notif.postId ? `/posts/${notif.postId}` : notif.type === 'follow' ? `/user/${notif.fromUsername}` : '#'}
-                      onClick={() => {
-                        if (!notif.read) markAsRead(notif.id);
-                        setIsOpen(false);
-                      }}
-                      className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition ${
-                        !notif.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''
-                      }`}
+                      key={n.id}
+                      href={n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#'}
+                      onClick={() => { if (!n.read) markAsRead(n.id); setIsOpen(false); }}
+                      className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
                     >
                       <div className="flex items-start gap-3">
-                        {/* Avatar or Icon */}
                         <div className="flex-shrink-0">
-                          {notif.fromUserAvatar ? (
-                            <img
-                              src={notif.fromUserAvatar}
-                              alt={notif.fromUsername}
-                              className="w-10 h-10 rounded-full"
-                            />
+                          {n.fromUserAvatar ? (
+                            <img src={n.fromUserAvatar} alt={n.fromUsername} className="w-10 h-10 rounded-full" />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                              {notif.fromUsername.charAt(0).toUpperCase()}
-                            </div>
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">{n.fromUsername.charAt(0).toUpperCase()}</div>
                           )}
                         </div>
-
-                        {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <div className="text-sm text-gray-900 dark:text-gray-100">
-                              {getNotificationText(notif)}
-                            </div>
-                            <span className="text-2xl flex-shrink-0">
-                              {getNotificationIcon(notif.type)}
-                            </span>
+                            <div className="text-sm text-gray-900 dark:text-gray-100">{getNotificationText(n)}</div>
+                            <span className="text-2xl flex-shrink-0">{getNotificationIcon(n.type)}</span>
                           </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {getTimeAgo(notif.createdAt)}
-                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{getTimeAgo(n.createdAt)}</p>
                         </div>
-
-                        {/* Unread indicator */}
-                        {!notif.read && (
-                          <div className="w-2 h-2 bg-indigo-600 rounded-full flex-shrink-0 mt-2" />
-                        )}
+                        {!n.read && <div className="w-2 h-2 bg-indigo-600 rounded-full flex-shrink-0 mt-2" />}
                       </div>
                     </Link>
                   ))}
                 </div>
               )}
             </div>
-
-            {/* Footer */}
-            {notifications.length > 0 && (
-              <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                <Link
-                  href="/notifications"
-                  onClick={() => setIsOpen(false)}
-                  className="block text-center text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
-                >
-                  View all notifications
-                </Link>
-              </div>
-            )}
+            <div className={isMobile ? 'px-4 py-3 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900' : 'p-3 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700'}>
+              {notifications.length > 0 ? `${notifications.length} notification${notifications.length !== 1 ? 's' : ''}` : 'No recent activity'}
+              {notifications.length > 0 && (
+                <div className="mt-2">
+                  <Link href="/notifications" onClick={() => setIsOpen(false)} className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm font-medium">View all</Link>
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
