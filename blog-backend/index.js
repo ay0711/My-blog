@@ -19,6 +19,15 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
+// Optional: SendGrid HTTP API client (avoids SMTP port blocks on some hosts)
+let sgMail = null;
+let SENDGRID_KEY = null;
+try {
+  sgMail = require('@sendgrid/mail');
+} catch (e) {
+  // package may not be installed locally yet; handled by dependency add
+}
+
 // CORS: allow local dev and optional production origins via env FRONTEND_ORIGIN(S)
 const ALLOWED_ORIGINS = (process.env.FRONTEND_ORIGINS
   ? process.env.FRONTEND_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)
@@ -70,18 +79,64 @@ const EMAIL_FROM = process.env.EMAIL_FROM || 'ModernBlog <noreply@modernblog.com
 
 let mailTransporter = null;
 if (EMAIL_USER && EMAIL_PASS) {
-  mailTransporter = nodemailer.createTransport({
-    host: EMAIL_HOST,
-    port: EMAIL_PORT,
-    secure: EMAIL_PORT === '465',
-    auth: { user: EMAIL_USER, pass: EMAIL_PASS },
-    connectionTimeout: 10000, // 10 second connection timeout
-    greetingTimeout: 10000, // 10 second greeting timeout
-    socketTimeout: 15000 // 15 second socket timeout
-  });
-  console.log('✅ Email transporter configured');
+  try {
+    mailTransporter = nodemailer.createTransport({
+      host: EMAIL_HOST,
+      port: Number(EMAIL_PORT),
+      secure: String(EMAIL_PORT) === '465',
+      auth: { user: EMAIL_USER, pass: EMAIL_PASS },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000
+    });
+    console.log(`✅ SMTP transporter configured (host=${EMAIL_HOST}, port=${EMAIL_PORT})`);
+  } catch (e) {
+    console.warn('⚠️  Failed to configure SMTP transporter:', e.message);
+  }
 } else {
   console.warn('⚠️  Email not configured. Set EMAIL_USER and EMAIL_PASS in .env');
+}
+
+// Prefer SendGrid HTTP API if available (avoids SMTP port blocks)
+try {
+  const explicitKey = process.env.SENDGRID_API_KEY;
+  const isSendgridSmtp = (EMAIL_HOST || '').includes('sendgrid');
+  // If using SendGrid SMTP, we can reuse EMAIL_PASS as API key for HTTP API
+  SENDGRID_KEY = explicitKey || (isSendgridSmtp ? EMAIL_PASS : null);
+  if (sgMail && SENDGRID_KEY) {
+    sgMail.setApiKey(SENDGRID_KEY);
+    console.log('✅ SendGrid HTTP API configured');
+  }
+} catch (e) {
+  console.warn('SendGrid API client not configured:', e.message);
+}
+
+async function sendEmail(to, subject, html) {
+  // Try SendGrid HTTP API first if configured
+  if (sgMail && SENDGRID_KEY) {
+    try {
+      await sgMail.send({ to, from: EMAIL_FROM, subject, html });
+      console.log(`✅ Email sent via SendGrid API to ${to}`);
+      return true;
+    } catch (e) {
+      console.error('SendGrid API send failed, falling back to SMTP:', e.response?.body || e.message);
+      // continue to SMTP fallback
+    }
+  }
+
+  if (!mailTransporter) {
+    console.warn('✋ No email transporter available');
+    return false;
+  }
+
+  try {
+    await mailTransporter.sendMail({ from: EMAIL_FROM, to, subject, html });
+    console.log(`✅ Email sent via SMTP to ${to}`);
+    return true;
+  } catch (e) {
+    console.error('SMTP send failed:', e);
+    return false;
+  }
 }
 
 let geminiClient = null;
@@ -1378,13 +1433,9 @@ const setSession = (res, user) => {
 
 // Helper: Send welcome email
 const sendWelcomeEmail = async (email, name) => {
-  if (!mailTransporter) return;
+  if (!email) return;
   try {
-    await mailTransporter.sendMail({
-      from: EMAIL_FROM,
-      to: email,
-      subject: '🎉 Welcome to ModernBlog!',
-      html: `
+    const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px;">
           <h1 style="text-align: center; margin-bottom: 20px;">Welcome to ModernBlog! 🎊</h1>
           <p style="font-size: 16px; line-height: 1.6;">Hi ${name || 'there'},</p>
@@ -1411,8 +1462,8 @@ const sendWelcomeEmail = async (email, name) => {
             Happy reading and writing! 📚✨
           </p>
         </div>
-      `
-    });
+      `;
+    await sendEmail(email, '🎉 Welcome to ModernBlog!', html);
     /* log removed */
   } catch (err) {
     console.error('Failed to send welcome email:', err.message);
@@ -2005,44 +2056,37 @@ app.post('/api/users/follow/:username', async (req, res) => {
 
             // Send email notification if email is configured and user has email notifications enabled
             const emailSettings = targetUser.notificationSettings?.emailNotifications;
-            const shouldSendEmail = mailTransporter &&
-              targetUser.email &&
-              emailSettings?.enabled !== false &&
-              emailSettings?.follows !== false;
+            const emailAllowed = targetUser.email && emailSettings?.enabled !== false && emailSettings?.follows !== false;
+            const canSend = (!!sgMail && !!SENDGRID_KEY) || !!mailTransporter;
 
-            if (shouldSendEmail) {
+            if (emailAllowed && canSend) {
               try {
                 console.log(`📧 Sending follow email to ${targetUser.email}`);
-                await mailTransporter.sendMail({
-                  from: EMAIL_FROM,
-                  to: targetUser.email,
-                  subject: `${user.name} started following you!`,
-                  html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                      <h2 style="color: #4F46E5;">New Follower!</h2>
-                      <p>Hi ${targetUser.name},</p>
-                      <p><strong>${user.name}</strong> (@${user.username}) started following you on ModernBlog.</p>
-                      <div style="margin: 20px 0; padding: 15px; background: #F3F4F6; border-radius: 8px;">
-                        <p style="margin: 0;"><strong>${user.name}</strong></p>
-                        <p style="margin: 5px 0; color: #6B7280;">@${user.username}</p>
-                        ${user.bio ? `<p style="margin: 10px 0;">${user.bio}</p>` : ''}
-                      </div>
-                      <a href="${process.env.FRONTEND_ORIGIN || 'http://localhost:3000'}/user/${user.username}" 
-                         style="display: inline-block; padding: 10px 20px; background: #4F46E5; color: white; text-decoration: none; border-radius: 6px; margin-top: 10px;">
-                        View Profile
-                      </a>
-                      <p style="margin-top: 20px; color: #6B7280; font-size: 12px;">
-                        You received this email because someone followed you on ModernBlog.
-                      </p>
+                const html = `
+                  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #4F46E5;">New Follower!</h2>
+                    <p>Hi ${targetUser.name},</p>
+                    <p><strong>${user.name}</strong> (@${user.username}) started following you on ModernBlog.</p>
+                    <div style="margin: 20px 0; padding: 15px; background: #F3F4F6; border-radius: 8px;">
+                      <p style="margin: 0;"><strong>${user.name}</strong></p>
+                      <p style="margin: 5px 0; color: #6B7280;">@${user.username}</p>
+                      ${user.bio ? `<p style=\"margin: 10px 0;\">${user.bio}</p>` : ''}
                     </div>
-                  `
-                });
-                console.log(`✅ Follow email sent successfully to ${targetUser.email}`);
+                    <a href="${process.env.FRONTEND_ORIGIN || 'http://localhost:3000'}/user/${user.username}" 
+                       style="display: inline-block; padding: 10px 20px; background: #4F46E5; color: white; text-decoration: none; border-radius: 6px; margin-top: 10px;">
+                      View Profile
+                    </a>
+                    <p style="margin-top: 20px; color: #6B7280; font-size: 12px;">
+                      You received this email because someone followed you on ModernBlog.
+                    </p>
+                  </div>
+                `;
+                await sendEmail(targetUser.email, `${user.name} started following you!`, html);
               } catch (emailErr) {
                 console.error('Failed to send follow email:', emailErr);
               }
             } else {
-              console.log(`⏭️  Skipping email: mailTransporter=${!!mailTransporter}, email=${!!targetUser.email}, enabled=${emailSettings?.enabled}, follows=${emailSettings?.follows}`);
+              console.log(`⏭️  Skipping email: canSend=${canSend}, email=${!!targetUser.email}, enabled=${emailSettings?.enabled}, follows=${emailSettings?.follows}`);
             }
           } catch (err) {
             console.error('Error in background notification/email processing:', err);
