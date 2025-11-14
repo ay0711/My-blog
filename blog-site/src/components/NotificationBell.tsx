@@ -181,7 +181,7 @@ export default function NotificationBell() {
             </div>
             {notifications.length > 0 && (
               <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 border-b border-gray-200 dark:border-gray-700">
-                <p className="text-xs text-gray-600 dark:text-gray-400 text-center">💡 Swipe right to delete a notification</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 text-center">💡 Swipe left to delete a notification</p>
               </div>
             )}
             <div className={isMobile ? 'flex-1 overflow-y-auto overscroll-contain' : 'max-h-96 overflow-y-auto'}>
@@ -195,18 +195,21 @@ export default function NotificationBell() {
                     <motion.div
                       key={n.id}
                       drag="x"
-                      dragConstraints={{ left: 0, right: 0 }}
-                      dragElastic={0.3}
+                      dragConstraints={{ left: -200, right: 0 }}
+                      dragElastic={0.2}
+                      dragSnapToOrigin
                       onDragEnd={(e, info) => {
-                        if (info.offset.x > 100) {
+                        if (info.offset.x < -80) {
                           deleteNotification(n.id);
                         }
                       }}
-                      whileDrag={{ scale: 1.02, backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
-                      className="relative bg-white dark:bg-gray-900"
+                      whileDrag={{ 
+                        backgroundColor: info => info.offset.x < -40 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.05)'
+                      }}
+                      className="relative bg-white dark:bg-gray-900 cursor-grab active:cursor-grabbing"
                       style={{ touchAction: 'pan-x' }}
                     >
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-red-500 opacity-0 transition-opacity duration-200" style={{ pointerEvents: 'none' }}>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-red-500" style={{ pointerEvents: 'none' }}>
                         <span className="text-sm font-medium">🗑️ Delete</span>
                       </div>
                       <div
