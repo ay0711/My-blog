@@ -1,142 +1,151 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiHome, FiPlusCircle, FiFileText, FiMenu, FiX, FiBookmark, FiTrendingUp } from 'react-icons/fi';
+import { FiHome, FiPlusCircle, FiFileText, FiBookmark, FiTrendingUp } from 'react-icons/fi';
 import DarkModeToggle from './DarkModeToggle';
 import AuthMenu from './auth/AuthMenu';
 import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const firstLinkRef = useRef<HTMLAnchorElement>(null);
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  const NavLinks = ({ onClick, mobile }: { onClick?: () => void; mobile?: boolean }) => (
-    <>
-      <Link href="/" ref={mobile ? firstLinkRef : undefined} className={`flex items-center gap-3 ${mobile ? 'py-3.5 px-3 text-base rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800' : ''} ${pathname === '/' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiHome className="w-5 h-5" /> <span>Home</span>
-      </Link>
-      <Link href="/explore" className={`flex items-center gap-3 ${mobile ? 'py-3.5 px-3 text-base rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800' : ''} ${pathname.startsWith('/explore') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiTrendingUp className="w-5 h-5" /> <span>Explore</span>
-      </Link>
-      <Link href="/create" className={`flex items-center gap-3 ${mobile ? 'py-3.5 px-3 text-base rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800' : ''} ${pathname.startsWith('/create') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiPlusCircle className="w-5 h-5" /> <span>Create</span>
-      </Link>
-      <Link href="/news" className={`flex items-center gap-3 ${mobile ? 'py-3.5 px-3 text-base rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800' : ''} ${pathname.startsWith('/news') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiFileText className="w-5 h-5" /> <span>News</span>
-      </Link>
-      <Link href="/bookmarks" className={`flex items-center gap-3 ${mobile ? 'py-3.5 px-3 text-base rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800' : ''} ${pathname.startsWith('/bookmarks') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiBookmark className="w-5 h-5" /> <span>Bookmarks</span>
-      </Link>
-    </>
-  );
-
-  // Lock body scroll and handle Escape to close when drawer is open
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const apply = () => setReducedMotion(mq.matches);
-    apply();
-    mq.addEventListener?.('change', apply);
-    return () => mq.removeEventListener?.('change', apply);
-  }, []);
 
   useEffect(() => {
-    if (open) {
-      const original = document.body.style.overflow;
+    if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
-      const onKey = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') setOpen(false);
-      };
-      window.addEventListener('keydown', onKey);
-      // focus first link
-      setTimeout(() => firstLinkRef.current?.focus(), 0);
-      return () => {
-        document.body.style.overflow = original;
-        window.removeEventListener('keydown', onKey);
-      };
+      return () => { document.body.style.overflow = 'unset'; };
     }
-  }, [open]);
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  const NavLink = ({ href, icon: Icon, children }: { href: string; icon: any; children: React.ReactNode }) => {
+    const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
+    return (
+      <Link 
+        href={href}
+        className={`
+          group flex items-center gap-4 px-4 py-3 rounded-full transition-all
+          ${isActive 
+            ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold' 
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+          }
+        `}
+      >
+        <Icon className={`w-6 h-6 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400'}`} />
+        <span className="text-xl">{children}</span>
+      </Link>
+    );
+  };
 
   return (
-    <motion.nav role="navigation" aria-label="Primary" initial={{ y: -100 }} animate={{ y: 0 }} className="bg-white/90 backdrop-blur dark:bg-[#0f1430]/90 shadow-md sticky top-0 z-50 border-b border-indigo-100 dark:border-[#1b2150] h-16 sm:h-14">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 h-full flex items-center justify-between">
-        {/* Mobile hamburger on left */}
-        <button
-          aria-label="Toggle navigation"
-          aria-expanded={open}
-          ref={menuButtonRef}
-          onClick={() => setOpen(!open)}
-          className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          {open ? <FiX size={24} /> : <FiMenu size={24} />}
-        </button>
+    <>
+      {/* Desktop Navbar - Hidden on mobile */}
+      <nav className="hidden lg:block fixed left-0 top-0 h-screen w-[275px] border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-40">
+        <div className="flex flex-col h-full px-3 py-2">
+          <Link href="/" className="px-4 py-4 mb-2">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              ModernBlog
+            </h1>
+          </Link>
+          
+          <nav className="flex flex-col gap-2 flex-1">
+            <NavLink href="/" icon={FiHome}>Home</NavLink>
+            <NavLink href="/explore" icon={FiTrendingUp}>Explore</NavLink>
+            <NavLink href="/news" icon={FiFileText}>News</NavLink>
+            <NavLink href="/bookmarks" icon={FiBookmark}>Bookmarks</NavLink>
+            <NavLink href="/create" icon={FiPlusCircle}>Create</NavLink>
+          </nav>
 
-        <Link href="/" className="text-lg sm:text-[22px] font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
-
-        {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-4">
-          <div className="flex gap-6">
-            <NavLinks />
+          <div className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-4">
+            <div className="flex items-center justify-between px-4">
+              <NotificationBell />
+              <DarkModeToggle />
+            </div>
+            <AuthMenu />
           </div>
-          <NotificationBell />
-          <DarkModeToggle />
-          <AuthMenu />
         </div>
+      </nav>
 
-        {/* Mobile right side icons */}
-        <div className="md:hidden flex items-center gap-1">
-          <NotificationBell />
-          <DarkModeToggle />
+      {/* Mobile Top Navbar */}
+      <nav className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 z-50">
+        <div className="flex items-center justify-between h-full px-4">
+          <Link href="/" className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            ModernBlog
+          </Link>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <DarkModeToggle />
+          </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Mobile side drawer (X-style) */}
-      <AnimatePresence>
-        {open && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
-              className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[100] md:hidden"
-            />
-            {/* Drawer */}
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-label="Navigation menu"
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="fixed top-0 left-0 bottom-0 w-[80%] max-w-[320px] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
-            >
-              <div className="flex flex-col min-h-full p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-8 pt-2">
-                  <Link href="/" onClick={() => setOpen(false)} className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
-                  <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100 transition-colors" aria-label="Close menu">
-                    <FiX size={24} />
-                  </button>
-                </div>
-                <div className="flex-1 flex flex-col gap-6">
-                  <nav className="flex flex-col gap-2">
-                    <NavLinks onClick={() => setOpen(false)} mobile />
-                  </nav>
-                  <div className="mt-auto pt-6 border-t border-gray-200 dark:border-gray-800 space-y-4">
-                    <AuthMenu mobile />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </motion.nav>
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 z-50 safe-area-inset-bottom">
+        <div className="flex items-center justify-around h-full px-2">
+          <Link 
+            href="/"
+            className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+              pathname === '/' 
+                ? 'text-indigo-600 dark:text-indigo-400' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}
+          >
+            <FiHome className="w-6 h-6" />
+            <span className="text-xs font-medium">Home</span>
+          </Link>
+          
+          <Link 
+            href="/explore"
+            className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+              pathname.startsWith('/explore') 
+                ? 'text-indigo-600 dark:text-indigo-400' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}
+          >
+            <FiTrendingUp className="w-6 h-6" />
+            <span className="text-xs font-medium">Explore</span>
+          </Link>
+          
+          <Link 
+            href="/create"
+            className="flex items-center justify-center w-12 h-12 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition-colors"
+          >
+            <FiPlusCircle className="w-6 h-6" />
+          </Link>
+          
+          <Link 
+            href="/news"
+            className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+              pathname.startsWith('/news') 
+                ? 'text-indigo-600 dark:text-indigo-400' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}
+          >
+            <FiFileText className="w-6 h-6" />
+            <span className="text-xs font-medium">News</span>
+          </Link>
+          
+          <Link 
+            href="/bookmarks"
+            className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+              pathname.startsWith('/bookmarks') 
+                ? 'text-indigo-600 dark:text-indigo-400' 
+                : 'text-gray-600 dark:text-gray-400'
+            }`}
+          >
+            <FiBookmark className="w-6 h-6" />
+            <span className="text-xs font-medium">Saved</span>
+          </Link>
+        </div>
+      </nav>
+
+      {/* Spacer for mobile layout */}
+      <div className="lg:hidden h-14" />
+      <div className="lg:hidden h-16" />
+    </>
   );
 }
