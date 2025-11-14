@@ -6,6 +6,8 @@ import { fetchJSON } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import ErrorState from '@/components/ErrorState';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Notification {
   id: string;
@@ -27,6 +29,8 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     if (authLoading) return; // Wait for auth to load
@@ -40,13 +44,21 @@ export default function NotificationsPage() {
   const loadNotifications = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await fetchJSON<{ notifications: Notification[] }>('/api/notifications');
       setNotifications(data.notifications || []);
     } catch (err) {
       console.error('Error loading notifications:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load notifications');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    await loadNotifications();
+    setRetrying(false);
   };
 
   const markAsRead = async (notificationId: string) => {
@@ -160,9 +172,21 @@ export default function NotificationsPage() {
     : notifications.filter(n => !n.read);
 
   if (authLoading || !user) {
+    return <LoadingSpinner fullScreen message="Loading your notifications..." />;
+  }
+
+  if (error && !loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-3xl mx-auto px-4 py-8">
+          <ErrorState 
+            title="Failed to Load Notifications"
+            message={error}
+            onRetry={handleRetry}
+            retrying={retrying}
+            type={error.includes('waking') || error.includes('timeout') ? 'timeout' : 'network'}
+          />
+        </div>
       </div>
     );
   }

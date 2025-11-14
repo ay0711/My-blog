@@ -6,6 +6,8 @@ import { FiTrendingUp, FiHash, FiUsers, FiStar } from 'react-icons/fi';
 import Link from 'next/link';
 import PostCard from '@/components/PostCard';
 import UserCard from '@/components/UserCard';
+import ErrorState from '@/components/ErrorState';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 type Post = {
   id: string;
@@ -38,6 +40,8 @@ export default function ExplorePage() {
   const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'trending' | 'tags' | 'users'>('trending');
+  const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     loadExploreData();
@@ -46,6 +50,7 @@ export default function ExplorePage() {
   const loadExploreData = async () => {
     try {
       setLoading(true);
+      setError(null);
 
       // Fetch all posts and calculate trending
       const postsData = await fetchJSON<{ posts: Post[] }>('/api/posts');
@@ -92,15 +97,34 @@ export default function ExplorePage() {
 
     } catch (err) {
       console.error('Failed to load explore data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load explore data');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleRetry = async () => {
+    setRetrying(true);
+    await loadExploreData();
+    setRetrying(false);
+  };
+
   if (loading) {
+    return <LoadingSpinner fullScreen message="Discovering trending content..." />;
+  }
+
+  if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <ErrorState 
+            title="Failed to Load Explore Page"
+            message={error}
+            onRetry={handleRetry}
+            retrying={retrying}
+            type={error.includes('waking') || error.includes('timeout') ? 'timeout' : 'network'}
+          />
+        </div>
       </div>
     );
   }

@@ -6,6 +6,8 @@ import { FiMapPin, FiLink, FiCalendar, FiUserPlus, FiUserCheck } from 'react-ico
 import { fetchJSON } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
+import ErrorState from '@/components/ErrorState';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface User {
   uid: string;
@@ -191,9 +193,20 @@ export default function UserProfilePage() {
   };
 
   if (loading) {
+    return <LoadingSpinner fullScreen message="Loading user profile..." />;
+  }
+
+  if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <ErrorState 
+            title="Failed to Load Profile"
+            message={error}
+            onRetry={() => window.location.reload()}
+            type={error.includes('waking') || error.includes('timeout') ? 'timeout' : 'network'}
+          />
+        </div>
       </div>
     );
   }

@@ -1,30 +1,35 @@
 'use client';
 import { motion } from 'framer-motion';
-import { FiAlertCircle, FiRefreshCw, FiWifi } from 'react-icons/fi';
+import { FiAlertCircle, FiRefreshCw, FiWifi, FiClock } from 'react-icons/fi';
 
 interface ErrorStateProps {
+  title?: string;
   message?: string;
   onRetry?: () => void;
+  retrying?: boolean;
   type?: 'error' | 'timeout' | 'network';
 }
 
 export default function ErrorState({ 
+  title,
   message, 
   onRetry,
+  retrying = false,
   type = 'error'
 }: ErrorStateProps) {
   const getIcon = () => {
     switch (type) {
       case 'timeout':
-        return <FiRefreshCw className="w-16 h-16 text-yellow-500" />;
+        return <FiClock className="w-16 h-16 text-yellow-500 dark:text-yellow-400" />;
       case 'network':
-        return <FiWifi className="w-16 h-16 text-red-500" />;
+        return <FiWifi className="w-16 h-16 text-orange-500 dark:text-orange-400" />;
       default:
-        return <FiAlertCircle className="w-16 h-16 text-red-500" />;
+        return <FiAlertCircle className="w-16 h-16 text-red-500 dark:text-red-400" />;
     }
   };
 
   const getTitle = () => {
+    if (title) return title;
     switch (type) {
       case 'timeout':
         return 'Server is Waking Up';
@@ -36,13 +41,14 @@ export default function ErrorState({
   };
 
   const getDefaultMessage = () => {
+    if (message) return message;
     switch (type) {
       case 'timeout':
-        return 'Our server is waking up from sleep mode. This usually takes 30-60 seconds on the first request.';
+        return 'Our server is waking up from sleep mode. This usually takes 30-60 seconds on the first request. Please wait a moment and try again.';
       case 'network':
-        return 'Please check your internet connection and try again.';
+        return 'Unable to connect to the server. Please check your internet connection and try again.';
       default:
-        return message || 'An unexpected error occurred. Please try again.';
+        return 'An unexpected error occurred while loading data. Please try again.';
     }
   };
 
@@ -81,10 +87,11 @@ export default function ErrorState({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onRetry}
-          className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+          disabled={retrying}
+          className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <FiRefreshCw className="w-5 h-5" />
-          Try Again
+          <FiRefreshCw className={`w-5 h-5 ${retrying ? 'animate-spin' : ''}`} />
+          {retrying ? 'Retrying...' : 'Try Again'}
         </motion.button>
       )}
     </motion.div>

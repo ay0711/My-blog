@@ -5,6 +5,8 @@ import { FiSettings, FiBell, FiMail, FiHeart, FiMessageCircle, FiRepeat, FiUserP
 import { fetchJSON } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import ErrorState from '@/components/ErrorState';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface NotificationSettings {
   emailNotifications: {
@@ -49,6 +51,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     if (authLoading) return; // Wait for auth to load
@@ -62,16 +66,23 @@ export default function SettingsPage() {
   const loadSettings = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await fetchJSON<{ settings: NotificationSettings }>('/api/users/me/settings');
       if (data.settings) {
         setSettings(data.settings);
       }
     } catch (err) {
       console.error('Error loading settings:', err);
-      // Use default settings if endpoint doesn't exist yet
+      setError(err instanceof Error ? err.message : 'Failed to load settings');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    await loadSettings();
+    setRetrying(false);
   };
 
   const saveSettings = async () => {
@@ -133,9 +144,21 @@ export default function SettingsPage() {
   };
 
   if (authLoading || !user) {
+    return <LoadingSpinner fullScreen message="Loading settings..." />;
+  }
+
+  if (error && !loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <ErrorState 
+            title="Failed to Load Settings"
+            message={error}
+            onRetry={handleRetry}
+            retrying={retrying}
+            type={error.includes('waking') || error.includes('timeout') ? 'timeout' : 'network'}
+          />
+        </div>
       </div>
     );
   }
