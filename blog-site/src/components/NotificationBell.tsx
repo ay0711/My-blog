@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiBell, FiTrash2, FiX } from 'react-icons/fi';
-import Link from 'next/link';
 import { fetchJSON } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 
