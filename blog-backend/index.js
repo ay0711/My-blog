@@ -370,6 +370,29 @@ app.get('/api/posts', async (req, res) => {
   }
 });
 
+// GET /api/posts/trending - Get trending posts by likes (must be before /:id route)
+app.get('/api/posts/trending', async (req, res) => {
+  try {
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || '10')));
+
+    if (mongoConnected) {
+      const posts = await Post.find()
+        .sort({ likes: -1, createdAt: -1 })
+        .limit(limit)
+        .lean();
+      return res.json({ posts });
+    }
+
+    const posts = readPosts()
+      .sort((a, b) => (b.likes || 0) - (a.likes || 0))
+      .slice(0, limit);
+    res.json({ posts });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to get trending posts' });
+  }
+});
+
 // GET /api/posts/:id
 app.get('/api/posts/:id', async (req, res) => {
   try {
@@ -1021,29 +1044,6 @@ app.post('/api/posts/:id/react', async (req, res) => {
 });
 
 // ========== TAGS ENDPOINTS ==========
-// GET /api/posts/trending - Get trending posts by likes
-app.get('/api/posts/trending', async (req, res) => {
-  try {
-    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || '10')));
-
-    if (mongoConnected) {
-      const posts = await Post.find()
-        .sort({ likes: -1, createdAt: -1 })
-        .limit(limit)
-        .lean();
-      return res.json({ posts });
-    }
-
-    const posts = readPosts()
-      .sort((a, b) => (b.likes || 0) - (a.likes || 0))
-      .slice(0, limit);
-    res.json({ posts });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to get trending posts' });
-  }
-});
-
 // GET /api/tags/trending - return top tags with counts
 app.get('/api/tags/trending', async (req, res) => {
   try {
