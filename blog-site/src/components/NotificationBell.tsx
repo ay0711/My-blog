@@ -230,7 +230,6 @@ export default function NotificationBell() {
                         </svg>
                       </button>
                     </div>
-                    </div>
                   ))}
                 </div>
               )}
