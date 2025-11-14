@@ -1663,36 +1663,7 @@ app.get('/api/users/check-username/:username', async (req, res) => {
   }
 });
 
-// GET /api/users/:username - Get user profile by username
-app.get('/api/users/:username', async (req, res) => {
-  try {
-    const username = req.params.username.toLowerCase().trim();
-    
-    let user;
-    if (mongoConnected) {
-      user = await User.findOne({ username }).select('-password').lean();
-    } else {
-      const usersFile = path.join(__dirname, 'users.json');
-      const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
-      user = arr.find(x => x.username === username);
-      if (user) {
-        const { password, ...userWithoutPassword } = user;
-        user = userWithoutPassword;
-      }
-    }
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    return res.json({ user });
-  } catch (e) {
-    console.error('Get user error:', e.message);
-    res.status(500).json({ message: 'Error fetching user' });
-  }
-});
-
-// GET /api/users/suggested - Get suggested users to follow
+// GET /api/users/suggested - Get suggested users to follow (must be before /:username)
 app.get('/api/users/suggested', async (req, res) => {
   try {
     const limit = Math.min(20, Math.max(1, parseInt(req.query.limit || '10')));
@@ -1757,6 +1728,35 @@ app.get('/api/users/suggested', async (req, res) => {
   } catch (e) {
     console.error('Get suggested users error:', e.message);
     res.status(500).json({ message: 'Error fetching suggested users' });
+  }
+});
+
+// GET /api/users/:username - Get user profile by username
+app.get('/api/users/:username', async (req, res) => {
+  try {
+    const username = req.params.username.toLowerCase().trim();
+    
+    let user;
+    if (mongoConnected) {
+      user = await User.findOne({ username }).select('-password').lean();
+    } else {
+      const usersFile = path.join(__dirname, 'users.json');
+      const arr = fs.existsSync(usersFile) ? JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]') : [];
+      user = arr.find(x => x.username === username);
+      if (user) {
+        const { password, ...userWithoutPassword } = user;
+        user = userWithoutPassword;
+      }
+    }
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    return res.json({ user });
+  } catch (e) {
+    console.error('Get user error:', e.message);
+    res.status(500).json({ message: 'Error fetching user' });
   }
 });
 
