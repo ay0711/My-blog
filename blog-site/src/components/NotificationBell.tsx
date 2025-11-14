@@ -222,7 +222,7 @@ export default function NotificationBell() {
                           e.stopPropagation();
                           deleteNotification(n.id);
                         }}
-                        className="absolute top-2 right-2 p-2 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 z-10"
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 z-10"
                         aria-label="Delete notification"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

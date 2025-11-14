@@ -14,7 +14,6 @@ export default function Navbar() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const [edgeSwipeStart, setEdgeSwipeStart] = useState<number | null>(null);
 
   const NavLinks = ({ onClick, mobile }: { onClick?: () => void; mobile?: boolean }) => (
     <>
@@ -61,35 +60,6 @@ export default function Navbar() {
       };
     }
   }, [open]);
-
-  // Edge swipe to open (from left edge on mobile)
-  useEffect(() => {
-    const onTouchStart = (e: TouchEvent) => {
-      if (open || window.innerWidth >= 768) return;
-      const touch = e.touches[0];
-      if (touch.clientX < 20) {
-        setEdgeSwipeStart(touch.clientX);
-      }
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (edgeSwipeStart === null) return;
-      const touch = e.touches[0];
-      if (touch.clientX - edgeSwipeStart > 60) {
-        setOpen(true);
-        setEdgeSwipeStart(null);
-      }
-    };
-    const onTouchEnd = () => setEdgeSwipeStart(null);
-
-    window.addEventListener('touchstart', onTouchStart, { passive: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: true });
-    window.addEventListener('touchend', onTouchEnd, { passive: true });
-    return () => {
-      window.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('touchend', onTouchEnd);
-    };
-  }, [open, edgeSwipeStart]);
 
   return (
     <motion.nav initial={{ y: -100 }} animate={{ y: 0 }} className="bg-white/90 backdrop-blur dark:bg-[#0f1430]/90 shadow-md sticky top-0 z-50 border-b border-indigo-100 dark:border-[#1b2150]">
@@ -150,7 +120,7 @@ export default function Navbar() {
               transition={reducedMotion ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 300 }}
               className="fixed left-0 top-0 bottom-0 w-[85vw] max-w-[360px] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
             >
-              <div className="flex flex-col h-full p-6">
+              <div className="flex flex-col min-h-full p-6">
                 <div className="flex items-center justify-between mb-8">
                   <Link href="/" onClick={() => setOpen(false)} className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
                   <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100">
