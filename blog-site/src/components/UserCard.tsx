@@ -25,7 +25,13 @@ export default function UserCard({ user, onFollowChange }: UserCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFollow = async () => {
+  const handleFollow = async (e?: React.MouseEvent) => {
+    // Prevent any default behavior
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     setLoading(true);
     setError(null);
     try {
@@ -35,9 +41,8 @@ export default function UserCard({ user, onFollowChange }: UserCardProps) {
       
       setIsFollowing(response.following);
       
-      if (onFollowChange) {
-        onFollowChange();
-      }
+      // Don't call onFollowChange to prevent page reload
+      // The follow state is updated locally which is enough
     } catch (err) {
       console.error('Follow error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to follow user';
@@ -113,9 +118,10 @@ export default function UserCard({ user, onFollowChange }: UserCardProps) {
 
         {/* Follow Button */}
         <button
+          type="button"
           onClick={handleFollow}
           disabled={loading}
-          className={`flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
             isFollowing
               ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
               : 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600'

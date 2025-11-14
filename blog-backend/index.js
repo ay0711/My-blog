@@ -74,9 +74,12 @@ if (EMAIL_USER && EMAIL_PASS) {
     host: EMAIL_HOST,
     port: EMAIL_PORT,
     secure: EMAIL_PORT === '465',
-    auth: { user: EMAIL_USER, pass: EMAIL_PASS }
+    auth: { user: EMAIL_USER, pass: EMAIL_PASS },
+    connectionTimeout: 10000, // 10 second connection timeout
+    greetingTimeout: 10000, // 10 second greeting timeout
+    socketTimeout: 15000 // 15 second socket timeout
   });
-  /* log removed */
+  console.log('✅ Email transporter configured');
 } else {
   console.warn('⚠️  Email not configured. Set EMAIL_USER and EMAIL_PASS in .env');
 }
