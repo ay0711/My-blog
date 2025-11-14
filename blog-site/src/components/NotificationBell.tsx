@@ -210,25 +210,27 @@ export default function NotificationBell() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <div className="text-sm text-gray-900 dark:text-gray-100">{getNotificationText(n)}</div>
-                              <span className="text-2xl flex-shrink-0">{getNotificationIcon(n.type)}</span>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span className="text-2xl">{getNotificationIcon(n.type)}</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteNotification(n.id);
+                                  }}
+                                  className="p-1.5 rounded bg-red-500 text-white hover:bg-red-600 active:bg-red-700"
+                                  aria-label="Delete notification"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
                             </div>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{getTimeAgo(n.createdAt)}</p>
                           </div>
                           {!n.read && <div className="w-2 h-2 bg-indigo-600 rounded-full flex-shrink-0 mt-2" />}
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteNotification(n.id);
-                        }}
-                        className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 z-10"
-                        aria-label="Delete notification"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
                     </div>
                   ))}
                 </div>

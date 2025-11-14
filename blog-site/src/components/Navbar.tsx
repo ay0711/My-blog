@@ -110,15 +110,11 @@ export default function Navbar() {
               role="dialog"
               aria-modal="true"
               aria-label="Navigation menu"
-              drag="x"
-              dragConstraints={{ left: -120, right: 0 }}
-              dragElastic={0.05}
-              onDragEnd={(e, info) => { if (info.offset.x < -60) setOpen(false); }}
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={reducedMotion ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed left-0 top-0 bottom-0 w-[85vw] max-w-[360px] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="fixed inset-0 w-full sm:w-[320px] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
             >
               <div className="flex flex-col min-h-full p-6">
                 <div className="flex items-center justify-between mb-8">
