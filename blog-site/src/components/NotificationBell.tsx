@@ -146,162 +146,108 @@ export default function NotificationBell() {
         aria-expanded={isOpen}
         aria-label="Notifications"
         onClick={() => setIsOpen(o => !o)}
-        className="relative p-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors active:scale-95"
+        className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-md"
       >
         <FiBell className="w-6 h-6" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 px-1.5 flex items-center justify-center text-[11px] font-bold text-white bg-indigo-600 rounded-full shadow-md">
-            {unreadCount > 99 ? '99+' : unreadCount}
+          <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
-      
       <AnimatePresence>
         {isOpen && (
-          <>
-            {isMobile && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsOpen(false)}
-                className="fixed inset-0 bg-black/50 z-[60] lg:hidden"
-              />
-            )}
-            
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className={
-                isMobile
-                  ? 'fixed inset-x-4 top-20 bottom-24 mx-auto max-w-md z-[70] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-800 lg:hidden'
-                  : 'absolute right-0 top-full mt-3 w-[420px] max-h-[600px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden'
-              }
-            >
-              {/* Header */}
-              <div className="sticky top-0 z-10 px-5 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Notifications</h2>
-                  {isMobile && (
-                    <button
-                      onClick={() => setIsOpen(false)}
-                      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 active:scale-95 transition-all"
-                      aria-label="Close"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-                {(unreadCount > 0 || notifications.length > 0) && (
-                  <div className="flex gap-4 mt-3 text-sm">
-                    {unreadCount > 0 && (
-                      <button
-                        onClick={markAllAsRead}
-                        className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
-                      >
-                        Mark all read
-                      </button>
-                    )}
-                    {notifications.length > 0 && (
-                      <button
-                        onClick={clearAll}
-                        className="text-gray-600 dark:text-gray-400 hover:underline font-medium"
-                      >
-                        Clear all
-                      </button>
-                    )}
-                  </div>
+          <motion.div
+            initial={{ opacity: 0, y: isMobile ? 8 : -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: isMobile ? 8 : -8 }}
+            className={isMobile
+              ? 'fixed inset-0 top-14 z-50 flex flex-col bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700'
+              : 'absolute right-0 mt-2 w-[420px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50'}
+          >
+            <div className={isMobile ? 'px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-900/95 sticky top-0 z-10' : 'flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 backdrop-blur sticky top-0'}>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">Notifications</h3>
+              <div className="flex items-center gap-3">
+                {unreadCount > 0 && (
+                  <button onClick={markAllAsRead} className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none">Mark all read</button>
+                )}
+                {notifications.length > 0 && (
+                  <button onClick={clearAll} className="text-xs font-medium text-red-600 dark:text-red-400 hover:underline focus:outline-none">Clear</button>
+                )}
+                {isMobile && (
+                  <button onClick={() => setIsOpen(false)} aria-label="Close" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none p-1 text-sm">✕</button>
                 )}
               </div>
-
-              {/* Content */}
-              <div className="overflow-y-auto" style={{ maxHeight: isMobile ? 'calc(100vh - 20rem - 5rem)' : '540px' }}>
-                {loading ? (
-                  <div className="p-4 space-y-4">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="flex gap-3 animate-pulse">
-                        <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
-                          <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-1/2" />
-                        </div>
+            </div>
+            <div className={isMobile ? 'flex-1 overflow-y-auto overscroll-contain' : 'max-h-[600px] overflow-y-auto'}>
+              {loading ? (
+                <div className="p-6 space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="animate-pulse flex gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700" />
+                      <div className="flex-1 space-y-2 pt-1">
+                        <div className="h-3 w-1/2 rounded bg-gray-200 dark:bg-gray-700" />
+                        <div className="h-3 w-1/3 rounded bg-gray-200 dark:bg-gray-700" />
                       </div>
-                    ))}
-                  </div>
-                ) : notifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-                    <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-                      <FiBell className="w-10 h-10 text-gray-400 dark:text-gray-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No notifications yet</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-[250px]">When you get notifications, they&apos;ll show up here</p>
-                  </div>
-                ) : (
-                  <div>
-                    {notifications.map(n => (
-                      <div
-                        key={n.id}
+                  ))}
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="p-10 text-center text-gray-500 dark:text-gray-400">
+                  <FiBell className="w-14 h-14 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No notifications yet</p>
+                  <p className="text-xs mt-1">Activity on your posts will appear here.</p>
+                </div>
+              ) : (
+                <ul role="list" className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {notifications.map(n => (
+                    <li
+                      key={n.id}
+                      role="listitem"
+                      className={`group relative px-4 py-3 flex gap-3 transition ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'bg-white dark:bg-gray-900'} hover:bg-gray-50 dark:hover:bg-gray-800/50`}
+                    >
+                      <button
                         onClick={() => {
                           if (!n.read) markAsRead(n.id);
                           setIsOpen(false);
                           window.location.href = n.postId ? `/posts/${n.postId}` : n.type === 'follow' ? `/user/${n.fromUsername}` : '#';
                         }}
-                        className={`
-                          relative flex gap-4 p-4 cursor-pointer transition-all border-b border-gray-100 dark:border-gray-800 last:border-b-0 active:bg-gray-100 dark:active:bg-gray-800
-                          ${!n.read ? 'bg-indigo-50/50 dark:bg-indigo-950/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}
-                        `}
-                      >
-                        {/* Avatar */}
-                        <div className="relative flex-shrink-0">
-                          {n.fromUserAvatar ? (
-                            <img src={n.fromUserAvatar} alt={n.fromUsername} className="w-12 h-12 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">
-                              {n.fromUsername.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center">
-                            <span className="text-sm">{getNotificationIcon(n.type)}</span>
-                          </div>
+                        className="absolute inset-0"
+                        aria-label="Open notification"
+                      />
+                      <div className="relative z-10 flex-shrink-0">
+                        {n.fromUserAvatar ? (
+                          <img src={n.fromUserAvatar} alt={n.fromUsername} className="w-11 h-11 rounded-full object-cover ring-1 ring-gray-200 dark:ring-gray-700" />
+                        ) : (
+                          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">{n.fromUsername.charAt(0).toUpperCase()}</div>
+                        )}
+                        {!n.read && <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-indigo-500 rounded-full ring-2 ring-white dark:ring-gray-900" />}
+                      </div>
+                      <div className="relative z-10 flex-1 min-w-0 flex flex-col">
+                        <div className="text-sm leading-5 text-gray-800 dark:text-gray-100">
+                          {getNotificationText(n)}
                         </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm text-gray-900 dark:text-gray-100 leading-snug mb-1">
-                            {getNotificationText(n)}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {getTimeAgo(n.createdAt)}
-                          </div>
+                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                          <span>{getTimeAgo(n.createdAt)}</span>
+                          <span className="select-none">•</span>
+                          <span className="text-xs text-gray-400">{getNotificationIcon(n.type)}</span>
                         </div>
-
-                        {/* Delete button */}
+                      </div>
+                      <div className="relative z-10 flex-shrink-0 self-start">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteNotification(n.id);
-                          }}
-                          className="flex-shrink-0 p-2.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition-all active:scale-95"
+                          onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
                           aria-label="Delete notification"
+                          className="p-2 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition"
                         >
                           <FiTrash2 className="w-4 h-4" />
                         </button>
-
-                        {/* Unread indicator */}
-                        {!n.read && (
-                          <div className="absolute top-1/2 -translate-y-1/2 left-2 w-2.5 h-2.5 rounded-full bg-indigo-600 shadow-sm" />
-                        )}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
