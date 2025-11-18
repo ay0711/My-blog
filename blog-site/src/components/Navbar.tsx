@@ -1,144 +1,192 @@
-'use client';
+"use client";
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiHome, FiPlusCircle, FiFileText, FiMenu, FiX, FiBookmark, FiTrendingUp } from 'react-icons/fi';
+import { FiHome, FiPlusCircle, FiFileText, FiBookmark, FiTrendingUp, FiUser } from 'react-icons/fi';
 import DarkModeToggle from './DarkModeToggle';
 import AuthMenu from './auth/AuthMenu';
 import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const firstLinkRef = useRef<HTMLAnchorElement>(null);
-  const [reducedMotion, setReducedMotion] = useState(false);
 
-  const NavLinks = ({ onClick, mobile }: { onClick?: () => void; mobile?: boolean }) => (
-    <>
-      <Link href="/" ref={mobile ? firstLinkRef : undefined} className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname === '/' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiHome /> <span>Home</span>
-      </Link>
-      <Link href="/explore" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname.startsWith('/explore') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiTrendingUp /> <span>Explore</span>
-      </Link>
-      <Link href="/create" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname.startsWith('/create') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiPlusCircle /> <span>Create</span>
-      </Link>
-      <Link href="/news" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname.startsWith('/news') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiFileText /> <span>News</span>
-      </Link>
-      <Link href="/bookmarks" className={`flex items-center gap-2 ${mobile ? 'py-3 text-lg' : ''} ${pathname.startsWith('/bookmarks') ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-900 dark:text-gray-100'} hover:text-indigo-600 dark:hover:text-indigo-400 transition`} onClick={onClick}>
-        <FiBookmark /> <span>Bookmarks</span>
-      </Link>
-    </>
-  );
-
-  // Lock body scroll and handle Escape to close when drawer is open
+  // Close mobile menu on route change
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const apply = () => setReducedMotion(mq.matches);
-    apply();
-    mq.addEventListener?.('change', apply);
-    return () => mq.removeEventListener?.('change', apply);
-  }, []);
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
+  // Lock scroll when mobile menu is open
   useEffect(() => {
-    if (open) {
-      const original = document.body.style.overflow;
+    if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
-      const onKey = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') setOpen(false);
-      };
-      window.addEventListener('keydown', onKey);
-      // focus first link
-      setTimeout(() => firstLinkRef.current?.focus(), 0);
-      return () => {
-        document.body.style.overflow = original;
-        window.removeEventListener('keydown', onKey);
-      };
+      return () => { document.body.style.overflow = ''; };
     }
-  }, [open]);
+  }, [mobileMenuOpen]);
+
+  const NavLink = ({ 
+    href, 
+    icon: Icon, 
+    children, 
+    mobile 
+  }: { 
+    href: string; 
+    icon: React.ComponentType<{ className?: string }>; 
+    children: React.ReactNode;
+    mobile?: boolean;
+  }) => {
+    const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
+    
+    if (mobile) {
+      return (
+        <Link 
+          href={href}
+          className={`
+            flex items-center gap-4 px-5 py-4 rounded-2xl transition-all
+            ${isActive 
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' 
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }
+          `}
+        >
+          <Icon className="w-6 h-6" />
+          <span className="text-lg font-semibold">{children}</span>
+        </Link>
+      );
+    }
+
+    return (
+      <Link 
+        href={href}
+        className={`
+          group flex items-center gap-4 px-5 py-3 rounded-full transition-all
+          ${isActive 
+            ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold' 
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+          }
+        `}
+        title={children as string}
+      >
+        <Icon className={`w-6 h-6 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400'} transition-colors`} />
+        <span className="xl:inline hidden text-[17px]">{children}</span>
+      </Link>
+    );
+  };
 
   return (
-    <motion.nav role="navigation" aria-label="Primary" initial={{ y: -100 }} animate={{ y: 0 }} className="bg-white/90 backdrop-blur dark:bg-[#0f1430]/90 shadow-md sticky top-0 z-50 border-b border-indigo-100 dark:border-[#1b2150] h-14">
-      <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
-        {/* Mobile hamburger on left */}
-        <button
-          aria-label="Toggle navigation"
-          aria-expanded={open}
-          ref={menuButtonRef}
-          onClick={() => setOpen(!open)}
-          className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          {open ? <FiX size={22} /> : <FiMenu size={22} />}
-        </button>
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-[88px] xl:w-[275px] border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-50">
+        <div className="flex flex-col h-full w-full py-4">
+          {/* Logo */}
+          <Link href="/" className="px-5 xl:px-6 py-3 mb-4">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent xl:block hidden">
+              ModernBlog
+            </h1>
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-xl xl:hidden shadow-lg">
+              M
+            </div>
+          </Link>
+          
+          {/* Navigation Links */}
+          <nav className="flex flex-col gap-2 flex-1 px-3">
+            <NavLink href="/" icon={FiHome}>Home</NavLink>
+            <NavLink href="/explore" icon={FiTrendingUp}>Explore</NavLink>
+            <NavLink href="/news" icon={FiFileText}>News</NavLink>
+            <NavLink href="/bookmarks" icon={FiBookmark}>Bookmarks</NavLink>
+            <NavLink href="/create" icon={FiPlusCircle}>Create</NavLink>
+          </nav>
 
-        <Link href="/" className="text-[22px] font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
-
-        {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-4">
-          <div className="flex gap-6">
-            <NavLinks />
-          </div>
-          <NotificationBell />
-          <DarkModeToggle />
-          <AuthMenu />
-        </div>
-
-        {/* Mobile right side icons */}
-        <div className="md:hidden flex items-center gap-2">
-          <NotificationBell />
-        </div>
-      </div>
-
-      {/* Mobile side drawer (X-style) */}
-      <AnimatePresence>
-        {open && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
-              className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[100] md:hidden"
-            />
-            {/* Drawer */}
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-label="Navigation menu"
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="fixed inset-0 w-full sm:w-[320px] sm:h-[70vh] bg-white dark:bg-gray-900 z-[101] shadow-2xl overflow-y-auto md:hidden"
-            >
-              <div className="flex flex-col min-h-full p-6">
-                <div className="flex items-center justify-between mb-6 h-14">
-                  <Link href="/" onClick={() => setOpen(false)} className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ModernBlog</Link>
-                  <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100">
-                    <FiX size={24} />
-                  </button>
-                </div>
-                <div className="flex-1 flex flex-col gap-6">
-                  <div className="flex flex-col gap-1">
-                    <NavLinks onClick={() => setOpen(false)} mobile />
-                  </div>
-                  <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800">
-                    <DarkModeToggle />
-                  </div>
-                  <div className="pt-2">
-                    <AuthMenu mobile />
-                  </div>
-                </div>
+          {/* Bottom Actions */}
+          <div className="border-t border-gray-200 dark:border-gray-800 pt-4 px-3 space-y-4">
+            <div className="flex items-center justify-center xl:justify-start gap-3 px-2">
+              <NotificationBell />
+              <div className="xl:block hidden">
+                <DarkModeToggle />
               </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </motion.nav>
+            </div>
+            <AuthMenu />
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile Top Navbar */}
+      <nav className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 z-50 shadow-sm">
+        <div className="flex items-center justify-between h-full px-4">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+              M
+            </div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              ModernBlog
+            </h1>
+          </Link>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <DarkModeToggle />
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 z-50 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_16px_rgba(0,0,0,0.4)]">
+        <div className="flex items-center justify-around h-full px-2 pb-safe">
+          <Link 
+            href="/"
+            className={`flex flex-col items-center justify-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[70px] ${
+              pathname === '/' 
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 scale-105' 
+                : 'text-gray-600 dark:text-gray-400 active:scale-95'
+            }`}
+          >
+            <FiHome className="w-6 h-6" />
+            <span className="text-xs font-semibold">Home</span>
+          </Link>
+          
+          <Link 
+            href="/explore"
+            className={`flex flex-col items-center justify-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[70px] ${
+              pathname.startsWith('/explore') 
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 scale-105' 
+                : 'text-gray-600 dark:text-gray-400 active:scale-95'
+            }`}
+          >
+            <FiTrendingUp className="w-6 h-6" />
+            <span className="text-xs font-semibold">Explore</span>
+          </Link>
+          
+          <Link 
+            href="/create"
+            className="flex items-center justify-center w-16 h-16 -mt-8 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-xl shadow-indigo-500/40 active:scale-95 transition-transform"
+          >
+            <FiPlusCircle className="w-8 h-8" />
+          </Link>
+          
+          <Link 
+            href="/news"
+            className={`flex flex-col items-center justify-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[70px] ${
+              pathname.startsWith('/news') 
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 scale-105' 
+                : 'text-gray-600 dark:text-gray-400 active:scale-95'
+            }`}
+          >
+            <FiFileText className="w-6 h-6" />
+            <span className="text-xs font-semibold">News</span>
+          </Link>
+          
+          <Link 
+            href="/bookmarks"
+            className={`flex flex-col items-center justify-center gap-1.5 px-4 py-2 rounded-2xl transition-all min-w-[70px] ${
+              pathname.startsWith('/bookmarks') 
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 scale-105' 
+                : 'text-gray-600 dark:text-gray-400 active:scale-95'
+            }`}
+          >
+            <FiBookmark className="w-6 h-6" />
+            <span className="text-xs font-semibold">Saved</span>
+          </Link>
+        </div>
+      </nav>
+    </>
   );
 }
