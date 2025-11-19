@@ -14,7 +14,8 @@ export default function NotificationBell() {
     const load = async () => {
       if (!user) { setUnread(0); return; }
       try {
-        const data = await fetchJSON<{ unreadCount: number }>('/api/notifications/unread');
+        // Use existing notifications endpoint which returns unreadCount
+        const data = await fetchJSON<{ notifications?: any[]; unreadCount?: number }>('/api/notifications');
         if (active) setUnread(data.unreadCount || 0);
       } catch {
         if (active) setUnread(0);

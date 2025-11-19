@@ -5,19 +5,8 @@ import Footer from "@/components/Footer";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import NotificationBell from "@/components/NotificationBell";
 import DarkModeToggle from "@/components/DarkModeToggle";
+import AuthMenu from "@/components/auth/AuthMenu";
 import Link from "next/link";
-
-// Fallback AuthMenu component when the external module is missing.
-// Replace this with the real import once "@/components/AuthMenu" exists.
-const AuthMenu = () => {
-  return (
-    <div className="flex items-center">
-      <Link href="/login" className="px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-        Sign in
-      </Link>
-    </div>
-  );
-};
 
 const inter = Inter({ subsets: ["latin"] });
 
